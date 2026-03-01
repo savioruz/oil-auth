@@ -32,4 +32,4 @@ lerna-debug.log*
 .DS_Store
 
 # generated schema.sql
-**/schema.sql
+#**/schema.sql

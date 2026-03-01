@@ -45,6 +45,7 @@ jobs:
 
       - name: Generate schema.sql
         run: bunx --bun @better-auth/cli@1 generate --yes --config ./src/providers/betterauth/schema/auth.ts --output ./src/providers/betterauth/schema/schema.sql
+        continue-on-error: true
         env:
           DB_POSTGRES_HOST: localhost
           DB_POSTGRES_PORT: 5432
