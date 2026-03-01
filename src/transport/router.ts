@@ -34,10 +34,10 @@ export function createAuthRouter(auth: Auth): Hono {
 
     const authHeader = c.req.header('Authorization');
     if (authHeader) headers.Authorization = authHeader;
-    
+
     const cookie = c.req.header('Cookie');
     if (cookie) headers.cookie = cookie;
-    
+
     const result = await auth.api.getSession({ headers });
 
     return c.json(result);
@@ -50,7 +50,7 @@ export function createAuthRouter(auth: Auth): Hono {
     if (cookie) headers.cookie = cookie;
 
     const result = await auth.api.signOut({ headers });
-    
+
     return c.json(result);
   });
 

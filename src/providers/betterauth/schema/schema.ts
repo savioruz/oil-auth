@@ -4,7 +4,7 @@
  * For more details, refer to the better-auth documentation: https://docs.better-auth.com/configuration/schema
  */
 
-import { defaultSchema } from "./default";
+import { defaultSchema } from './default';
 
 type UserFields = {
   id: string;

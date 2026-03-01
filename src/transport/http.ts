@@ -1,8 +1,8 @@
 import type { Config } from '@config/config';
 import type { IdentityService } from '@identity/service';
+import type { Logger } from '@infras/logger/logger';
 import type { Otel } from '@infras/otel/otel';
 import type { PostgresClient } from '@infras/postgres/client';
-import type { Logger } from '@infras/logger/logger';
 import { identityMiddleware } from '@middleware/identity';
 import { tracingMiddleware } from '@middleware/tracing';
 import type { Auth } from '@providers/betterauth/service';
@@ -19,7 +19,7 @@ export class HttpServer {
     identityService: IdentityService,
     private betterAuth: Auth,
     private postgresClient: PostgresClient,
-    private logger: Logger,
+    private logger: Logger
   ) {
     this.app = new Hono();
     this.setup(identityService);
@@ -42,7 +42,7 @@ export class HttpServer {
       await next();
       this.logger.info(
         { method: c.req.method, path: c.req.path, status: c.res.status, ms: Date.now() - start },
-        'request',
+        'request'
       );
     });
     this.app.use('*', tracingMiddleware(this.otel));

@@ -21,7 +21,14 @@ async function main() {
 
   const identityService = new IdentityService({ provider: betterAuthProvider }, otel);
 
-  const httpServer = new HttpServer(config, otel, identityService, betterAuth, postgresClient, logger);
+  const httpServer = new HttpServer(
+    config,
+    otel,
+    identityService,
+    betterAuth,
+    postgresClient,
+    logger
+  );
 
   const server = serve({
     port: config.app.port,
