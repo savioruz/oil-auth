@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "lib": ["ESNext"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    "types": ["bun-types", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@config/*": ["./src/config/*"],
+      "@infras/*": ["./src/infras/*"],
+      "@identity/*": ["./src/identity/*"],
+      "@providers/*": ["./src/providers/*"],
+      "@middleware/*": ["./src/middleware/*"],
+      "@transport/*": ["./src/transport/*"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}

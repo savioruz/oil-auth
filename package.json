@@ -1,0 +1,48 @@
+{
+  "name": "oil-auth",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/cmd/server/main.ts",
+    "migrate:generate": "bun x @better-auth/cli@latest generate --yes --config ./src/providers/betterauth/schema/auth.ts --output ./src/providers/betterauth/schema/schema.sql",
+    "migrate:up": "bun x @better-auth/cli@latest migrate --yes --config ./src/providers/betterauth/schema/auth.ts",
+    "start": "bun run src/cmd/server/main.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "bun test ./src/**/*.test.ts",
+    "test:unit": "bun test ./src/**/*.test.ts",
+    "test:integration": "bun test integration_test",
+    "test:e2e": "bun test e2e_test",
+    "test:all": "bun test ./src/**/*.test.ts integration_test e2e_test",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:test:up": "docker-compose -f docker-compose.test.yml up -d",
+    "docker:test:down": "docker-compose -f docker-compose.test.yml down",
+    "docker:build": "docker build .",
+    "dev:docker": "docker-compose up"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.8.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.45.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.48.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.48.0",
+    "@opentelemetry/resources": "^1.21.0",
+    "@opentelemetry/sdk-node": "^0.48.0",
+    "@opentelemetry/semantic-conventions": "^1.21.0",
+    "better-auth": "^1.0.0",
+    "hono": "^4.12.3",
+    "ioredis": "^5.3.0",
+    "kysely": "^0.28.11",
+    "pg": "^8.19.0",
+    "pino": "^10.3.1",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "@types/bun": "latest",
+    "@types/node": "^20.0.0",
+    "pino-pretty": "^13.1.3",
+    "typescript": "^5.3.0",
+    "wrangler": "^4.4.0"
+  }
+}
