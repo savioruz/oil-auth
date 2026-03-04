@@ -58,6 +58,9 @@ export class BetterAuthService {
         bearer(),
         jwt({
           jwks: {
+            // Private key stored as plain JWK (not AES-encrypted) so the custom
+            // /api/auth/token/:product handler can read and sign with it directly
+            // via raw SQL + jose, without needing to replicate the decryption path.
             disablePrivateKeyEncryption: true,
           },
           jwt: {
