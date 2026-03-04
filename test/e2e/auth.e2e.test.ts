@@ -471,4 +471,112 @@ describe('Auth E2E', () => {
       expect(response.headers.get('access-control-allow-origin')).toBeDefined();
     });
   });
+
+  describe('JWT Token Endpoint', () => {
+    let sessionCookie: string;
+    let bearerToken: string;
+    let userEmail: string;
+
+    beforeAll(async () => {
+      userEmail = generateRandomEmail();
+      const password = generateRandomPassword();
+
+      const signUpResponse = await fetch(`${baseUrl}/api/auth/sign-up/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, password, name: 'JWT Test User' }),
+      });
+
+      // Extract session cookie from Set-Cookie header
+      const setCookie = signUpResponse.headers.get('set-cookie') ?? '';
+      const match = setCookie.match(/better-auth\.session_token=([^;]+)/);
+      sessionCookie = match ? `better-auth.session_token=${match[1]}` : '';
+
+      // Extract bearer token from set-auth-token header
+      bearerToken = signUpResponse.headers.get('set-auth-token') ?? '';
+    });
+
+    test('sign-up response should include set-auth-token header', async () => {
+      expect(bearerToken).toBeTruthy();
+    });
+
+    test('POST /api/auth/token/:product - should return JWT for valid product', async () => {
+      const response = await fetch(`${baseUrl}/api/auth/token/productA`, {
+        method: 'POST',
+        headers: { Cookie: sessionCookie },
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json() as { token: string };
+      expect(body.token).toBeTruthy();
+      expect(body.token.startsWith('ey')).toBe(true);
+    });
+
+    test('POST /api/auth/token/:product - JWT should have correct claims', async () => {
+      const response = await fetch(`${baseUrl}/api/auth/token/productA`, {
+        method: 'POST',
+        headers: { Cookie: sessionCookie },
+      });
+
+      const body = await response.json() as { token: string };
+      const { token } = body;
+
+      // Fetch JWKS and verify offline
+      const jwksResponse = await fetch(`${baseUrl}/api/auth/jwks`);
+      const jwks = await jwksResponse.json() as { keys: unknown[] };
+
+      const { createRemoteJWKSet, jwtVerify } = await import('jose');
+      const JWKS = createRemoteJWKSet(new URL(`${baseUrl}/api/auth/jwks`));
+
+      const { payload } = await jwtVerify(token, JWKS, {
+        issuer: baseUrl,
+        audience: 'productA',
+      });
+
+      expect(payload.sub).toBeTruthy();
+      expect(payload.aud).toBe('productA');
+      expect(payload.iss).toBe(baseUrl);
+      expect(typeof payload['email']).toBe('string');
+      expect(typeof payload['role']).toBe('string');
+      expect(payload['sid']).toBeTruthy();
+      // Verify expiry is ~3 hours from now
+      const expDelta = (payload.exp ?? 0) - Math.floor(Date.now() / 1000);
+      expect(expDelta).toBeGreaterThan(3 * 60 * 60 - 60); // within 1 minute of 3h
+      expect(expDelta).toBeLessThanOrEqual(3 * 60 * 60);
+    });
+
+    test('POST /api/auth/token/:product - different product gets different aud', async () => {
+      const response = await fetch(`${baseUrl}/api/auth/token/productB`, {
+        method: 'POST',
+        headers: { Cookie: sessionCookie },
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json() as { token: string };
+
+      // Decode payload without verifying (just check aud claim)
+      const parts = body.token.split('.');
+      const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf-8');
+      const payload = JSON.parse(payloadJson) as { aud: string };
+
+      expect(payload.aud).toBe('productB');
+    });
+
+    test('POST /api/auth/token/:product - should return 401 with no session', async () => {
+      const response = await fetch(`${baseUrl}/api/auth/token/productA`, {
+        method: 'POST',
+      });
+
+      expect(response.status).toBe(401);
+    });
+
+    test('POST /api/auth/token/:product - should return 400 for unknown product', async () => {
+      const response = await fetch(`${baseUrl}/api/auth/token/unknownProduct`, {
+        method: 'POST',
+        headers: { Cookie: sessionCookie },
+      });
+
+      expect(response.status).toBe(400);
+    });
+  });
 });
