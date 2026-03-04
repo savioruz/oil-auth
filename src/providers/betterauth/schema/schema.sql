@@ -12,4 +12,4 @@ create index "account_user_id_idx" on "account" ("user_id");
 
 create index "verification_identifier_idx" on "verification" ("identifier");
 
-create table "jwks" ("id" text not null primary key, "public_key" text not null, "private_key" text not null, "created_at" timestamptz default CURRENT_TIMESTAMP not null, "expires_at" timestamptz);
+create table "jwks" ("id" text not null primary key, "publicKey" text not null, "privateKey" text not null, "createdAt" timestamptz default CURRENT_TIMESTAMP not null, "expiresAt" timestamptz);
