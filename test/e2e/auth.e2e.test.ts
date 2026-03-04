@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, test } from 'bun:test';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { generateRandomEmail, generateRandomPassword } from './helpers';
 
 const baseUrl = 'http://localhost:3000';
@@ -522,7 +523,6 @@ describe('Auth E2E', () => {
       const { token } = body;
 
       // Verify JWT signature using JWKS endpoint
-      const { createRemoteJWKSet, jwtVerify } = await import('jose');
       const JWKS = createRemoteJWKSet(new URL(`${baseUrl}/api/auth/jwks`));
 
       const { payload } = await jwtVerify(token, JWKS, {
@@ -533,7 +533,7 @@ describe('Auth E2E', () => {
       expect(payload.sub).toBeTruthy();
       expect(payload.aud).toBe('productA');
       expect(payload.iss).toBe(baseUrl);
-      expect(typeof payload['email']).toBe('string');
+      expect(payload['email']).toBe(userEmail);
       expect(typeof payload['role']).toBe('string');
       expect(payload['sid']).toBeTruthy();
       // Verify expiry is ~3 hours from now
@@ -551,12 +551,24 @@ describe('Auth E2E', () => {
       expect(response.status).toBe(200);
       const body = await response.json() as { token: string };
 
-      // Decode payload without verifying (just check aud claim)
-      const parts = body.token.split('.');
-      const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf-8');
-      const payload = JSON.parse(payloadJson) as { aud: string };
-
+      // Verify via JWKS and check aud is productB
+      const JWKS = createRemoteJWKSet(new URL(`${baseUrl}/api/auth/jwks`));
+      const { payload } = await jwtVerify(body.token, JWKS, {
+        issuer: baseUrl,
+        audience: 'productB',
+      });
       expect(payload.aud).toBe('productB');
+    });
+
+    test('POST /api/auth/token/:product - should return JWT using Bearer token', async () => {
+      const response = await fetch(`${baseUrl}/api/auth/token/productA`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${bearerToken}` },
+      });
+
+      expect(response.status).toBe(200);
+      const body = await response.json() as { token: string };
+      expect(body.token).toBeTruthy();
     });
 
     test('POST /api/auth/token/:product - should return 401 with no session', async () => {
