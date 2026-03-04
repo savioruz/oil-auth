@@ -12,6 +12,10 @@ type UserFields = {
   email: string;
   emailVerified: string;
   image?: string;
+  role: string;
+  banned?: string;
+  banReason?: string;
+  banExpires?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -23,6 +27,7 @@ type SessionFields = {
   expiresAt: string;
   ipAddress?: string;
   userAgent?: string;
+  impersonatedBy?: string;
   createdAt: string;
   updatedAt: string;
 };
