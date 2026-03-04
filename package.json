@@ -11,9 +11,9 @@
     "lint:fix": "biome check --write .",
     "test": "bun test ./src/**/*.test.ts",
     "test:unit": "bun test ./src/**/*.test.ts",
-    "test:integration": "bun test integration_test",
-    "test:e2e": "bun test e2e_test",
-    "test:all": "bun test ./src/**/*.test.ts integration_test e2e_test",
+    "test:integration": "bun test test/integration",
+    "test:e2e": "bun test test/e2e",
+    "test:all": "bun test ./src/**/*.test.ts test/integration test/e2e",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:test:up": "docker-compose -f docker-compose.test.yml up -d",
@@ -35,7 +35,7 @@
     "kysely": "^0.28.11",
     "pg": "^8.19.0",
     "pino": "^10.3.1",
-    "zod": "^3.22.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
