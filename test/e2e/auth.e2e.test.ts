@@ -521,10 +521,7 @@ describe('Auth E2E', () => {
       const body = await response.json() as { token: string };
       const { token } = body;
 
-      // Fetch JWKS and verify offline
-      const jwksResponse = await fetch(`${baseUrl}/api/auth/jwks`);
-      const jwks = await jwksResponse.json() as { keys: unknown[] };
-
+      // Verify JWT signature using JWKS endpoint
       const { createRemoteJWKSet, jwtVerify } = await import('jose');
       const JWKS = createRemoteJWKSet(new URL(`${baseUrl}/api/auth/jwks`));
 
