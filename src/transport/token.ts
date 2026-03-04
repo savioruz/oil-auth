@@ -31,9 +31,9 @@ export async function handleTokenRequest(
 
   const sessionHeaders: Record<string, string> = {};
   if (authHeader) {
-    sessionHeaders['authorization'] = authHeader;
+    sessionHeaders.authorization = authHeader;
   } else if (cookieHeader) {
-    sessionHeaders['cookie'] = cookieHeader;
+    sessionHeaders.cookie = cookieHeader;
   } else {
     return c.json({ error: 'unauthorized', message: 'No session provided' }, 401);
   }
