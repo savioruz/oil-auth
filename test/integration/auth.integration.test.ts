@@ -374,13 +374,7 @@ describe('BetterAuth Integration', () => {
   });
 
   describe('Bearer & JWT Plugin', () => {
-    let sessionCookie: string;
     let bearerToken: string;
-
-    const extractSessionCookie = (setCookieHeader: string): string => {
-      const match = setCookieHeader.match(/better-auth\.session_token=([^;]+)/);
-      return match ? match[1] : '';
-    };
 
     beforeAll(async () => {
       const { headers } = await auth.api.signUpEmail({
@@ -391,7 +385,6 @@ describe('BetterAuth Integration', () => {
           name: 'Bearer Test User',
         },
       });
-      sessionCookie = extractSessionCookie(headers.get('set-cookie') ?? '');
       bearerToken = headers.get('set-auth-token') ?? '';
     });
 
@@ -426,8 +419,18 @@ describe('BetterAuth Integration', () => {
       const body = await response.json() as { keys: Array<{ kty: string; crv?: string }> };
       expect(body.keys).toBeDefined();
       expect(body.keys.length).toBeGreaterThan(0);
-      expect(body.keys[0].kty).toBe('OKP');
-      expect(body.keys[0].crv).toBe('Ed25519');
+      const ed25519Key = body.keys.find(k => k.crv === 'Ed25519');
+      expect(ed25519Key).toBeDefined();
+      expect(ed25519Key!.kty).toBe('OKP');
+    });
+
+    test('bearer token should authenticate with getSession', async () => {
+      const session = await auth.api.getSession({
+        headers: { authorization: `Bearer ${bearerToken}` },
+      });
+      expect(session).not.toBeNull();
+      expect(session?.user).toBeDefined();
+      expect(session?.session).toBeDefined();
     });
   });
 });
