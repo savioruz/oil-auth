@@ -1,0 +1,87 @@
+import type { Config } from '@config/config';
+import type { Auth } from '@providers/betterauth/service';
+import type { Context } from 'hono';
+import { importJWK, SignJWT } from 'jose';
+
+interface JwksRow {
+  id: string;
+  public_key: string;
+  private_key: string;
+  created_at: Date;
+  expires_at: Date | null;
+}
+
+export async function handleTokenRequest(
+  c: Context,
+  auth: Auth,
+  config: Config,
+  dbPool: import('pg').Pool
+): Promise<Response> {
+  const product = c.req.param('product');
+
+  // Validate product against allowlist
+  const allowedAudiences = new Set(config.auth.allowedAudiences);
+  if (!allowedAudiences.has(product)) {
+    return c.json({ error: 'invalid_audience', message: `Unknown product: ${product}` }, 400);
+  }
+
+  // Validate session — accept Bearer token or session cookie
+  const authHeader = c.req.header('Authorization');
+  const cookieHeader = c.req.header('Cookie');
+
+  const sessionHeaders: Record<string, string> = {};
+  if (authHeader) {
+    sessionHeaders['authorization'] = authHeader;
+  } else if (cookieHeader) {
+    sessionHeaders['cookie'] = cookieHeader;
+  } else {
+    return c.json({ error: 'unauthorized', message: 'No session provided' }, 401);
+  }
+
+  const sessionResult = await auth.api.getSession({ headers: sessionHeaders });
+  if (!sessionResult || !sessionResult.session || !sessionResult.user) {
+    return c.json({ error: 'unauthorized', message: 'Invalid or expired session' }, 401);
+  }
+
+  const { session, user } = sessionResult;
+  const u = user as typeof user & { role?: string };
+
+  // Fetch the most recent active JWKS private key
+  const result = await dbPool.query<JwksRow>(
+    `SELECT id, private_key FROM jwks WHERE expires_at IS NULL OR expires_at > NOW() ORDER BY created_at DESC LIMIT 1`
+  );
+
+  if (result.rows.length === 0) {
+    return c.json({ error: 'server_error', message: 'No signing key available' }, 500);
+  }
+
+  const { id: kid, private_key: privateKeyJson } = result.rows[0];
+
+  // Parse the private key — better-auth stores it as JWK JSON
+  // The private key may be encrypted; use jose to import it
+  let privateKey: CryptoKey;
+  try {
+    const jwk = JSON.parse(privateKeyJson) as Record<string, unknown>;
+    privateKey = (await importJWK(jwk, 'EdDSA')) as CryptoKey;
+  } catch {
+    return c.json({ error: 'server_error', message: 'Failed to load signing key' }, 500);
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const exp = now + 3 * 60 * 60; // 3 hours
+
+  const jwt = await new SignJWT({
+    email: u.email,
+    role: u.role ?? 'user',
+    sid: session.id,
+  })
+    .setProtectedHeader({ alg: 'EdDSA', kid })
+    .setIssuer(config.auth.baseUrl)
+    .setSubject(u.id)
+    .setAudience(product)
+    .setIssuedAt(now)
+    .setExpirationTime(exp)
+    .sign(privateKey);
+
+  return c.json({ token: jwt });
+}
