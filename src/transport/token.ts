@@ -2,6 +2,7 @@ import type { Config } from '@config/config';
 import type { Auth } from '@providers/betterauth/service';
 import type { Context } from 'hono';
 import { importJWK, SignJWT } from 'jose';
+import type { Pool } from 'pg';
 
 interface JwksRow {
   id: string;
@@ -15,13 +16,12 @@ export async function handleTokenRequest(
   c: Context,
   auth: Auth,
   config: Config,
-  dbPool: import('pg').Pool
+  dbPool: Pool
 ): Promise<Response> {
   const product = c.req.param('product');
 
   // Validate product against allowlist
-  const allowedAudiences = new Set(config.auth.allowedAudiences);
-  if (!allowedAudiences.has(product)) {
+  if (!config.auth.allowedAudiences.includes(product)) {
     return c.json({ error: 'invalid_audience', message: `Unknown product: ${product}` }, 400);
   }
 
@@ -38,13 +38,18 @@ export async function handleTokenRequest(
     return c.json({ error: 'unauthorized', message: 'No session provided' }, 401);
   }
 
-  const sessionResult = await auth.api.getSession({ headers: sessionHeaders });
+  let sessionResult: Awaited<ReturnType<typeof auth.api.getSession>>;
+  try {
+    sessionResult = await auth.api.getSession({ headers: sessionHeaders });
+  } catch {
+    return c.json({ error: 'unauthorized', message: 'Invalid or expired session' }, 401);
+  }
   if (!sessionResult || !sessionResult.session || !sessionResult.user) {
     return c.json({ error: 'unauthorized', message: 'Invalid or expired session' }, 401);
   }
 
   const { session, user } = sessionResult;
-  const u = user as typeof user & { role?: string };
+  const u = user as typeof user & { role?: 'admin' | 'user' };
 
   // Fetch the most recent active JWKS private key
   const result = await dbPool.query<JwksRow>(
