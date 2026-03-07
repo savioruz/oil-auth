@@ -434,7 +434,7 @@ describe('BetterAuth Integration', () => {
     });
   });
 
-  describe('POST /api/auth/token/:product', () => {
+  describe('GET /api/auth/token/:product', () => {
     let sessionCookie: string;
     let userEmail: string;
 

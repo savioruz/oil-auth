@@ -36,10 +36,18 @@ async function main() {
     tokenService
   );
 
-  const server = serve({
-    port: config.app.port,
-    fetch: httpServer.getApp().fetch,
-  });
+  let server: ReturnType<typeof serve>;
+  try {
+    server = serve({
+      port: config.app.port,
+      fetch: httpServer.getApp().fetch,
+    });
+  } catch (error) {
+    logger.error(
+      `Failed to start server: ${error instanceof Error ? error.message : String(error)}`
+    );
+    process.exit(1);
+  }
 
   logger.info(`Server running at http://localhost:${server.port}`);
 
