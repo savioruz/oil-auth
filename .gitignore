@@ -31,5 +31,8 @@ lerna-debug.log*
 # misc
 .DS_Store
 
+# git
+.worktrees/
+
 # generated schema.sql
 #**/schema.sql
