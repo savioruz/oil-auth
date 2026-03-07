@@ -501,9 +501,9 @@ describe('Auth E2E', () => {
       expect(bearerToken).toBeTruthy();
     });
 
-    test('POST /api/auth/token/:product - should return JWT for valid product', async () => {
+    test('GET /api/auth/token/:product - should return JWT for valid product', async () => {
       const response = await fetch(`${baseUrl}/api/auth/token/productA`, {
-        method: 'POST',
+        method: 'GET',
         headers: { Cookie: sessionCookie },
       });
 
@@ -513,9 +513,9 @@ describe('Auth E2E', () => {
       expect(body.token.startsWith('ey')).toBe(true);
     });
 
-    test('POST /api/auth/token/:product - JWT should have correct claims', async () => {
+    test('GET /api/auth/token/:product - JWT should have correct claims', async () => {
       const response = await fetch(`${baseUrl}/api/auth/token/productA`, {
-        method: 'POST',
+        method: 'GET',
         headers: { Cookie: sessionCookie },
       });
 
@@ -542,9 +542,9 @@ describe('Auth E2E', () => {
       expect(expDelta).toBeLessThanOrEqual(3 * 60 * 60);
     });
 
-    test('POST /api/auth/token/:product - different product gets different aud', async () => {
+    test('GET /api/auth/token/:product - different product gets different aud', async () => {
       const response = await fetch(`${baseUrl}/api/auth/token/productB`, {
-        method: 'POST',
+        method: 'GET',
         headers: { Cookie: sessionCookie },
       });
 
@@ -560,9 +560,9 @@ describe('Auth E2E', () => {
       expect(payload.aud).toBe('productB');
     });
 
-    test('POST /api/auth/token/:product - should return JWT using Bearer token', async () => {
+    test('GET /api/auth/token/:product - should return JWT using Bearer token', async () => {
       const response = await fetch(`${baseUrl}/api/auth/token/productA`, {
-        method: 'POST',
+        method: 'GET',
         headers: { Authorization: `Bearer ${bearerToken}` },
       });
 
@@ -571,17 +571,17 @@ describe('Auth E2E', () => {
       expect(body.token).toBeTruthy();
     });
 
-    test('POST /api/auth/token/:product - should return 401 with no session', async () => {
+    test('GET /api/auth/token/:product - should return 401 with no session', async () => {
       const response = await fetch(`${baseUrl}/api/auth/token/productA`, {
-        method: 'POST',
+        method: 'GET',
       });
 
       expect(response.status).toBe(401);
     });
 
-    test('POST /api/auth/token/:product - should return 400 for unknown product', async () => {
+    test('GET /api/auth/token/:product - should return 400 for unknown product', async () => {
       const response = await fetch(`${baseUrl}/api/auth/token/unknownProduct`, {
-        method: 'POST',
+        method: 'GET',
         headers: { Cookie: sessionCookie },
       });
 

@@ -60,9 +60,7 @@ src/
     └── http/
         ├── server.ts     # HttpServer — middleware stack, health check, route mounting
         ├── openapi.ts    # /openapi.json + /docs (Scalar UI, dev only)
-        └── handler/
-            ├── token.handler.ts   # POST /api/auth/token/:product
-            └── health.handler.ts  # GET /health
+        └── handler/      # http handler
 ```
 
 ---
@@ -128,8 +126,8 @@ Server is available at `http://localhost:3000`.
 ### Local development (app + postgres + redis)
 
 ```bash
-bun run docker:up        # start
-bun run docker:down      # stop
+bun run docker:up
+bun run docker:down
 ```
 
 ### App-only (external infrastructure)
@@ -146,7 +144,7 @@ docker compose -f deployments/app.yml up
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | Returns `{ status: "ok" }` and pings the database. Returns `503` if the DB is unreachable. |
+| `GET` | `/health` | Returns `{ status: "ok" }`. Returns `503` if the DB is unreachable. |
 
 ### Auth — prefix `/api/auth`
 
@@ -222,46 +220,6 @@ Valid products are configured via `AUTH_ALLOWED_AUDIENCES`.
 | `bun run test:all` | All tests |
 | `bun run docker:up` | Start full Docker Compose stack |
 | `bun run docker:down` | Stop Docker Compose stack |
-
----
-
-## Environment Variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `APP_PORT` | `3000` | HTTP listen port |
-| `APP_ENV` | `development` | `development` \| `production` \| `test` |
-| `APP_NAME` | `auth-service` | Service name (used in telemetry) |
-| `APP_CORS_ENABLE` | `true` | Enable CORS |
-| `APP_CORS_ALLOW_CREDENTIALS` | `true` | Allow credentials |
-| `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:3000,...` | Comma-separated origins |
-| `APP_CORS_ALLOWED_HEADERS` | `Accept,...` | Comma-separated headers |
-| `APP_CORS_ALLOWED_METHODS` | `GET,POST,...` | Comma-separated methods |
-| `APP_CORS_MAX_AGE_SECONDS` | `300` | Preflight cache duration |
-| `DB_POSTGRES_HOST` | `localhost` | PostgreSQL host |
-| `DB_POSTGRES_PORT` | `5432` | PostgreSQL port |
-| `DB_POSTGRES_NAME` | `oil_auth` | Database name |
-| `DB_POSTGRES_USER` | `postgres` | Database user |
-| `DB_POSTGRES_PASSWORD` | `` | Database password |
-| `DB_POSTGRES_SSL_MODE` | `disable` | `disable` \| `require` |
-| `DB_POSTGRES_TIMEZONE` | `UTC` | Database timezone |
-| `REDIS_HOST` | `localhost` | Redis host |
-| `REDIS_PORT` | `6379` | Redis port |
-| `REDIS_PASSWORD` | `` | Redis password |
-| `REDIS_DB` | `0` | Redis database index |
-| `REDIS_TLS` | `false` | Enable Redis TLS |
-| `SESSION_EXPIRES_IN` | `604800` | Session TTL in seconds (7 days) |
-| `SESSION_UPDATE_AGE` | `86400` | Session refresh threshold in seconds (1 day) |
-| `SESSION_COOKIE_CACHE_MAX_AGE` | `300` | Redis cookie cache TTL in seconds (5 min) |
-| `AUTH_BASE_URL` | `` | Public base URL of this service |
-| `AUTH_SECRET_KEY` | `` | Secret key for session signing (min 32 chars) |
-| `AUTH_ALLOWED_AUDIENCES` | `` | Comma-separated list of valid JWT audience values |
-| `AUTH_REQUIRE_EMAIL_VERIFICATION` | `false` | Require email verification before sign-in |
-| `AUTH_TRUSTED_ORIGINS` | `` | Comma-separated trusted origins for CSRF |
-| `OTEL_ENABLED` | `false` | Enable OpenTelemetry |
-| `OTEL_PROTOCOL` | `grpc` | `grpc` \| `http` |
-| `OTEL_ENDPOINT` | `localhost:4317` | OTLP collector endpoint |
-| `LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` |
 
 ---
 

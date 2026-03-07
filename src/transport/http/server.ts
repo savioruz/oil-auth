@@ -9,9 +9,7 @@ import { tracingMiddleware } from '@middleware/tracing';
 import type { Auth } from '@providers/betterauth/service';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { createHealthHandler } from './handler/health.handler';
-import { createTokenHandler } from './handler/token.handler';
-import { createOpenAPIRouter } from './openapi';
+import { registerRoutes } from './routes';
 
 export class HttpServer {
   private app: Hono;
@@ -52,16 +50,13 @@ export class HttpServer {
     this.app.use('*', tracingMiddleware(this.otel));
     this.app.use('*', identityMiddleware(identityService));
 
-    this.app.post('/api/auth/token/:product', createTokenHandler(this.tokenService));
-
-    this.app.on(['POST', 'GET'], '/api/auth/*', (c) => this.betterAuth.handler(c.req.raw));
-
-    this.app.get('/health', createHealthHandler(this.postgresClient));
-
-    if (this.config.app.env === 'development') {
-      this.app.route('/', createOpenAPIRouter(this.betterAuth));
-      this.logger.info(`OpenAPI docs available at http://localhost:${this.config.app.port}/docs`);
-    }
+    registerRoutes(this.app, {
+      config: this.config,
+      tokenService: this.tokenService,
+      betterAuth: this.betterAuth,
+      postgresClient: this.postgresClient,
+      logger: this.logger,
+    });
   }
 
   getApp(): Hono {

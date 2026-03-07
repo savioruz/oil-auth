@@ -33,6 +33,8 @@ export class PostgresClient {
       }
     });
 
+    this.ping();
+
     this.initialized = true;
   }
 
@@ -42,6 +44,16 @@ export class PostgresClient {
     }
 
     return this.pool;
+  }
+
+  ping(): void {
+    if (!this.pool) {
+      throw new Error('PostgreSQL client not initialized');
+    }
+
+    this.pool
+      .query('SELECT 1')
+      .catch((err) => this.logger?.error({ err }, 'PostgreSQL ping failed'));
   }
 
   getConnectionString(): string {
