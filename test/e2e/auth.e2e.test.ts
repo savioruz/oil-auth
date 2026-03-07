@@ -460,7 +460,7 @@ describe('Auth E2E', () => {
 
   describe('CORS', () => {
     test('should include CORS headers', async () => {
-      const response = await fetch(`${baseUrl}/health`, {
+      const response = await fetch(`${baseUrl}/ok`, {
         method: 'OPTIONS',
         headers: {
           'Origin': 'http://localhost:3001',

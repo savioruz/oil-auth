@@ -10,7 +10,7 @@ import { createTokenHandler } from './token.handler';
 
 const makeApp = (tokenService: any) => {
   const app = new Hono();
-  app.post('/api/auth/token/:product', createTokenHandler(tokenService));
+  app.get('/api/auth/token/:product', createTokenHandler(tokenService));
   return app;
 };
 
@@ -27,7 +27,7 @@ describe('createTokenHandler', () => {
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productA', {
-      method: 'POST',
+      method: 'GET',
       headers: { Authorization: 'Bearer my-session-token' },
     });
 
@@ -43,7 +43,7 @@ describe('createTokenHandler', () => {
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productB', {
-      method: 'POST',
+      method: 'GET',
       headers: { Cookie: 'better-auth.session_token=cookie-token' },
     });
 
@@ -58,7 +58,7 @@ describe('createTokenHandler', () => {
   test('returns 401 when no auth header or cookie provided', async () => {
     const app = makeApp(mockTokenService);
 
-    const res = await app.request('/api/auth/token/productA', { method: 'POST' });
+    const res = await app.request('/api/auth/token/productA', { method: 'GET' });
 
     expect(res.status).toBe(401);
     const body = (await res.json()) as Record<string, any>;
@@ -73,7 +73,7 @@ describe('createTokenHandler', () => {
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/unknown-product', {
-      method: 'POST',
+      method: 'GET',
       headers: { Authorization: 'Bearer token' },
     });
 
@@ -87,7 +87,7 @@ describe('createTokenHandler', () => {
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productA', {
-      method: 'POST',
+      method: 'GET',
       headers: { Authorization: 'Bearer bad-token' },
     });
 
@@ -101,7 +101,7 @@ describe('createTokenHandler', () => {
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productA', {
-      method: 'POST',
+      method: 'GET',
       headers: { Authorization: 'Bearer token' },
     });
 
@@ -115,7 +115,7 @@ describe('createTokenHandler', () => {
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productA', {
-      method: 'POST',
+      method: 'GET',
       headers: { Authorization: 'Bearer token' },
     });
 
@@ -129,7 +129,7 @@ describe('createTokenHandler', () => {
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productA', {
-      method: 'POST',
+      method: 'GET',
       headers: { Authorization: 'Bearer token' },
     });
 
@@ -143,7 +143,7 @@ describe('createTokenHandler', () => {
     const app = makeApp(mockTokenService);
 
     await app.request('/api/auth/token/productA', {
-      method: 'POST',
+      method: 'GET',
       headers: {
         Authorization: 'Bearer bearer-token',
         Cookie: 'better-auth.session_token=cookie-token',
