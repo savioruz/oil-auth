@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `domains/token/` bounded context: `JwksRepository` interface, `PostgresJwksRepository` (raw SQL isolated from transport), `TokenService` (JWT signing with typed errors)
 - `transport/http/handler/token.handler.ts` — thin HTTP adapter for `GET /api/auth/token/:product`; maps typed domain errors to HTTP status codes
 - `transport/http/routes.ts` — `registerRoutes(app, deps)` function separating route registration from middleware setup
+- OpenAPI spec (`/openapi.json`) and interactive API docs (`/docs`) powered by [Scalar](https://scalar.com) UI, available in `development` env
 - `AUTH_BASE_URL`, `AUTH_SECRET_KEY`, `AUTH_REQUIRE_EMAIL_VERIFICATION`, `AUTH_TRUSTED_ORIGINS`, `AUTH_ALLOWED_AUDIENCES` env vars added to `docker-compose.yml` and `deployments/app.yml`
 - `test/e2e/server/e2e-server-start.ts` — runs migrations and starts the server before e2e tests
 - `test/e2e/server/e2e-server-stop.ts` — stops the server after e2e tests via PID file
