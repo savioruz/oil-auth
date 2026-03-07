@@ -6,10 +6,10 @@ import type { Pool } from 'pg';
 
 interface JwksRow {
   id: string;
-  public_key: string;
-  private_key: string;
-  created_at: Date;
-  expires_at: Date | null;
+  publicKey: string;
+  privateKey: string;
+  createdAt: Date;
+  expiresAt: Date | null;
 }
 
 export async function handleTokenRequest(
@@ -53,14 +53,14 @@ export async function handleTokenRequest(
 
   // Fetch the most recent active JWKS private key
   const result = await dbPool.query<JwksRow>(
-    `SELECT id, private_key FROM jwks WHERE expires_at IS NULL OR expires_at > NOW() ORDER BY created_at DESC LIMIT 1`
+    `SELECT id, "privateKey" FROM jwks WHERE "expiresAt" IS NULL OR "expiresAt" > NOW() ORDER BY "createdAt" DESC LIMIT 1`
   );
 
   if (result.rows.length === 0) {
     return c.json({ error: 'server_error', message: 'No signing key available' }, 500);
   }
 
-  const { id: kid, private_key: privateKeyJson } = result.rows[0];
+  const { id: kid, privateKey: privateKeyJson } = result.rows[0];
 
   // Parse the private key — better-auth stores it as JWK JSON
   // The private key may be encrypted; use jose to import it
