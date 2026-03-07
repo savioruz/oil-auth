@@ -1,5 +1,5 @@
-import type { IdentityProvider } from '@identity/provider';
-import type { UserIdentity } from '@identity/types';
+import type { IdentityProvider } from '@domains/identity/provider';
+import type { UserIdentity } from '@domains/identity/types';
 import type { Session, User } from 'better-auth/types';
 import type { Auth } from './service';
 
