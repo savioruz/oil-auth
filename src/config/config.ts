@@ -45,6 +45,13 @@ const configSchema = z.object({
   log: z.object({
     level: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   }),
+  auth: z.object({
+    baseUrl: z.string().default('http://localhost:3000'),
+    secretKey: z.string().default('your_secret_key'),
+    requireEmailVerification: z.boolean().default(false),
+    trustedOrigins: z.array(z.string()).default([]),
+    allowedAudiences: z.array(z.string()).default([]),
+  }),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -92,6 +99,13 @@ export function loadConfig(): Config {
     },
     log: {
       level: (env('LOG_LEVEL', 'info') as 'debug' | 'info' | 'warn' | 'error') || 'info',
+    },
+    auth: {
+      baseUrl: env('AUTH_BASE_URL', 'http://localhost:3000'),
+      secretKey: env('AUTH_SECRET_KEY', 'your_secret_key'),
+      requireEmailVerification: envBool('AUTH_REQUIRE_EMAIL_VERIFICATION', false),
+      trustedOrigins: envArray('AUTH_TRUSTED_ORIGINS'),
+      allowedAudiences: envArray('AUTH_ALLOWED_AUDIENCES'),
     },
   };
 

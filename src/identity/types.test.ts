@@ -7,6 +7,7 @@ describe('Identity Types', () => {
       id: '123',
       email: 'test@example.com',
       emailVerified: true,
+      role: 'user',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -14,6 +15,7 @@ describe('Identity Types', () => {
     expect(user.id).toBe('123');
     expect(user.email).toBe('test@example.com');
     expect(user.emailVerified).toBe(true);
+    expect(user.role).toBe('user');
     expect(user.createdAt).toBeInstanceOf(Date);
   });
 
@@ -24,6 +26,7 @@ describe('Identity Types', () => {
       emailVerified: false,
       name: 'John Doe',
       image: 'https://example.com/avatar.png',
+      role: 'user',
       createdAt: new Date(),
       updatedAt: new Date(),
     };

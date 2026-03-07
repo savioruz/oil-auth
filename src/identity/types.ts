@@ -4,6 +4,7 @@ export interface UserIdentity {
   emailVerified: boolean;
   name?: string;
   image?: string;
+  role: 'admin' | 'user';
   createdAt: Date;
   updatedAt: Date;
 }

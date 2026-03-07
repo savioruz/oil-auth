@@ -4,14 +4,16 @@ import type { Session, User } from 'better-auth/types';
 import type { Auth } from './service';
 
 function mapSessionToUserIdentity(_session: Session, user: User): UserIdentity {
+  const u = user as User & { role?: 'admin' | 'user' };
   return {
-    id: user.id,
-    email: user.email,
-    emailVerified: user.emailVerified,
-    name: user.name ?? undefined,
-    image: user.image ?? undefined,
-    createdAt: new Date(user.createdAt),
-    updatedAt: new Date(user.updatedAt),
+    id: u.id,
+    email: u.email,
+    emailVerified: u.emailVerified,
+    name: u.name ?? undefined,
+    image: u.image ?? undefined,
+    role: u.role ?? 'user',
+    createdAt: new Date(u.createdAt),
+    updatedAt: new Date(u.updatedAt),
   };
 }
 
@@ -22,7 +24,7 @@ export class BetterAuthProviderAdapter implements IdentityProvider {
     try {
       const result = await this.auth.api.getSession({
         headers: {
-          cookie: `better-auth.session_token=${token}`,
+          authorization: `Bearer ${token}`,
         },
       });
 
@@ -39,7 +41,7 @@ export class BetterAuthProviderAdapter implements IdentityProvider {
   async signOut(token: string): Promise<void> {
     await this.auth.api.signOut({
       headers: {
-        cookie: `better-auth.session_token=${token}`,
+        authorization: `Bearer ${token}`,
       },
     });
   }

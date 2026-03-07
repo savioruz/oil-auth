@@ -14,6 +14,7 @@ describe('IdentityService', () => {
           id: 'user-123',
           email: 'test@example.com',
           emailVerified: true,
+          role: 'user' as const,
           createdAt: new Date(),
           updatedAt: new Date(),
         })

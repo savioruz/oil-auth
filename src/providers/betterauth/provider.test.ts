@@ -55,7 +55,7 @@ describe('BetterAuthProviderAdapter', () => {
       expect(result).toBeNull();
     });
 
-    test('should call getSession with correct cookie', async () => {
+    test('should call getSession with correct authorization header', async () => {
       mockAuth.api.getSession.mockImplementation(() =>
         Promise.resolve({
           session: { token: 'token-123' },
@@ -75,21 +75,21 @@ describe('BetterAuthProviderAdapter', () => {
 
       expect(mockAuth.api.getSession).toHaveBeenCalledWith({
         headers: {
-          cookie: 'better-auth.session_token=my-token',
+          authorization: 'Bearer my-token',
         },
       });
     });
   });
 
   describe('signOut()', () => {
-    test('should call signOut with correct cookie', async () => {
+    test('should call signOut with correct authorization header', async () => {
       mockAuth.api.signOut.mockImplementation(() => Promise.resolve());
 
       await provider.signOut('token-to-sign-out');
 
       expect(mockAuth.api.signOut).toHaveBeenCalledWith({
         headers: {
-          cookie: 'better-auth.session_token=token-to-sign-out',
+          authorization: 'Bearer token-to-sign-out',
         },
       });
     });
