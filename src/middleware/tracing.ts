@@ -19,13 +19,19 @@ export const tracingMiddleware = (otel: Otel): MiddlewareHandler => {
 
     try {
       await next();
-
-      scope.setAttribute('http.status_code', c.res.status);
-      scope.end();
     } catch (error) {
       scope.traceIfError(error as Error);
       scope.end();
       throw error;
     }
+
+    const status = c.res.status;
+    scope.setAttribute('http.status_code', status);
+
+    if (status >= 500) {
+      scope.traceIfError(new Error(`HTTP ${status}`));
+    }
+
+    scope.end();
   };
 };
