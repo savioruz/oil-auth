@@ -19,7 +19,7 @@ describe('createHealthHandler', () => {
 
     const res = await app.request('/health');
     expect(res.status).toBe(200);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.status).toBe('ok');
   });
 
@@ -33,7 +33,7 @@ describe('createHealthHandler', () => {
 
     const res = await app.request('/health');
     expect(res.status).toBe(503);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.status).toBe('error');
   });
 

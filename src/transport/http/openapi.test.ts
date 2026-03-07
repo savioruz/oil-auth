@@ -15,7 +15,7 @@ describe('createOpenAPIRouter', () => {
     const res = await router.request('/openapi.json');
 
     expect(res.status).toBe(200);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.openapi).toBe('3.0.0');
     expect(body.info.title).toBe('Oil Auth');
   });

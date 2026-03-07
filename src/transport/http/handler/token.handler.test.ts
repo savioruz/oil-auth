@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { Hono } from 'hono';
 import {
   InvalidAudienceError,
   NoSigningKeyError,
   SigningKeyImportError,
   UnauthorizedError,
 } from '@domains/token/token.service';
+import { Hono } from 'hono';
 import { createTokenHandler } from './token.handler';
 
 const makeApp = (tokenService: any) => {
@@ -32,7 +32,7 @@ describe('createTokenHandler', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.token).toBe('signed.jwt.token');
     expect(mockTokenService.issueToken).toHaveBeenCalledWith('productA', {
       authorization: 'Bearer my-session-token',
@@ -48,7 +48,7 @@ describe('createTokenHandler', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.token).toBe('signed.jwt.token');
     expect(mockTokenService.issueToken).toHaveBeenCalledWith('productB', {
       cookie: 'better-auth.session_token=cookie-token',
@@ -61,7 +61,7 @@ describe('createTokenHandler', () => {
     const res = await app.request('/api/auth/token/productA', { method: 'POST' });
 
     expect(res.status).toBe(401);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.error).toBe('unauthorized');
     expect(mockTokenService.issueToken).not.toHaveBeenCalled();
   });
@@ -78,14 +78,12 @@ describe('createTokenHandler', () => {
     });
 
     expect(res.status).toBe(400);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.error).toBe('invalid_audience');
   });
 
   test('returns 401 for UnauthorizedError', async () => {
-    mockTokenService.issueToken = mock(() =>
-      Promise.reject(new UnauthorizedError())
-    );
+    mockTokenService.issueToken = mock(() => Promise.reject(new UnauthorizedError()));
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productA', {
@@ -94,14 +92,12 @@ describe('createTokenHandler', () => {
     });
 
     expect(res.status).toBe(401);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.error).toBe('unauthorized');
   });
 
   test('returns 500 for NoSigningKeyError', async () => {
-    mockTokenService.issueToken = mock(() =>
-      Promise.reject(new NoSigningKeyError())
-    );
+    mockTokenService.issueToken = mock(() => Promise.reject(new NoSigningKeyError()));
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productA', {
@@ -110,14 +106,12 @@ describe('createTokenHandler', () => {
     });
 
     expect(res.status).toBe(500);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.error).toBe('server_error');
   });
 
   test('returns 500 for SigningKeyImportError', async () => {
-    mockTokenService.issueToken = mock(() =>
-      Promise.reject(new SigningKeyImportError())
-    );
+    mockTokenService.issueToken = mock(() => Promise.reject(new SigningKeyImportError()));
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productA', {
@@ -126,14 +120,12 @@ describe('createTokenHandler', () => {
     });
 
     expect(res.status).toBe(500);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.error).toBe('server_error');
   });
 
   test('returns 500 for unexpected errors', async () => {
-    mockTokenService.issueToken = mock(() =>
-      Promise.reject(new Error('Something unexpected'))
-    );
+    mockTokenService.issueToken = mock(() => Promise.reject(new Error('Something unexpected')));
     const app = makeApp(mockTokenService);
 
     const res = await app.request('/api/auth/token/productA', {
@@ -142,7 +134,7 @@ describe('createTokenHandler', () => {
     });
 
     expect(res.status).toBe(500);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.error).toBe('server_error');
     expect(body.message).toBe('Unexpected error');
   });

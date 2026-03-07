@@ -161,9 +161,7 @@ describe('TokenService', () => {
     });
 
     test('throws UnauthorizedError when session object is missing', async () => {
-      mockAuth.api.getSession = mock(() =>
-        Promise.resolve({ session: null, user: { id: 'u1' } })
-      );
+      mockAuth.api.getSession = mock(() => Promise.resolve({ session: null, user: { id: 'u1' } }));
 
       await expect(
         tokenService.issueToken('productA', { authorization: 'Bearer token' })
@@ -171,9 +169,7 @@ describe('TokenService', () => {
     });
 
     test('throws UnauthorizedError when user object is missing', async () => {
-      mockAuth.api.getSession = mock(() =>
-        Promise.resolve({ session: { id: 's1' }, user: null })
-      );
+      mockAuth.api.getSession = mock(() => Promise.resolve({ session: { id: 's1' }, user: null }));
 
       await expect(
         tokenService.issueToken('productA', { authorization: 'Bearer token' })

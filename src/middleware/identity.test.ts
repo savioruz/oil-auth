@@ -34,7 +34,7 @@ describe('identityMiddleware', () => {
     app.get('/test', (c) => c.json({ hasService: !!c.identityService }));
 
     const res = await app.request('/test');
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.hasService).toBe(true);
   });
 
@@ -46,7 +46,7 @@ describe('identityMiddleware', () => {
     });
 
     expect(mockService.verify).toHaveBeenCalledWith('my-token');
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.identity?.id).toBe('user-123');
   });
 
@@ -58,7 +58,7 @@ describe('identityMiddleware', () => {
     });
 
     expect(mockService.verify).toHaveBeenCalledWith('cookie-token');
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.identity?.id).toBe('user-123');
   });
 
@@ -81,7 +81,7 @@ describe('identityMiddleware', () => {
     const res = await app.request('/test');
 
     expect(mockService.verify).not.toHaveBeenCalled();
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.identity).toBeNull();
   });
 
@@ -93,7 +93,7 @@ describe('identityMiddleware', () => {
     });
 
     expect(mockService.verify).not.toHaveBeenCalled();
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.identity).toBeNull();
   });
 
@@ -105,7 +105,7 @@ describe('identityMiddleware', () => {
       headers: { Authorization: 'Bearer expired-token' },
     });
 
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.identity).toBeNull();
   });
 
@@ -117,7 +117,7 @@ describe('identityMiddleware', () => {
       headers: { Authorization: 'Bearer bad-token' },
     });
 
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.identity).toBeNull();
   });
 
@@ -128,7 +128,7 @@ describe('identityMiddleware', () => {
 
     const res = await app.request('/test');
     expect(res.status).toBe(200);
-    const body = await res.json() as Record<string, any>;
+    const body = (await res.json()) as Record<string, any>;
     expect(body.reached).toBe(true);
   });
 });
