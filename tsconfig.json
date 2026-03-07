@@ -15,7 +15,7 @@
       "@/*": ["./src/*"],
       "@config/*": ["./src/config/*"],
       "@infras/*": ["./src/infras/*"],
-      "@identity/*": ["./src/identity/*"],
+      "@domains/*": ["./src/domains/*"],
       "@providers/*": ["./src/providers/*"],
       "@middleware/*": ["./src/middleware/*"],
       "@transport/*": ["./src/transport/*"]

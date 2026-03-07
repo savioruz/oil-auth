@@ -1,5 +1,6 @@
 import type { Config } from '@config/config';
-import type { IdentityService } from '@identity/service';
+import type { IdentityService } from '@domains/identity/service';
+import type { TokenService } from '@domains/token/token.service';
 import type { Logger } from '@infras/logger/logger';
 import type { Otel } from '@infras/otel/otel';
 import type { PostgresClient } from '@infras/postgres/client';
@@ -8,8 +9,9 @@ import { tracingMiddleware } from '@middleware/tracing';
 import type { Auth } from '@providers/betterauth/service';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { createHealthHandler } from './handler/health.handler';
+import { createTokenHandler } from './handler/token.handler';
 import { createOpenAPIRouter } from './openapi';
-import { handleTokenRequest } from './token';
 
 export class HttpServer {
   private app: Hono;
@@ -20,7 +22,8 @@ export class HttpServer {
     identityService: IdentityService,
     private betterAuth: Auth,
     private postgresClient: PostgresClient,
-    private logger: Logger
+    private logger: Logger,
+    private tokenService: TokenService
   ) {
     this.app = new Hono();
     this.setup(identityService);
@@ -49,20 +52,11 @@ export class HttpServer {
     this.app.use('*', tracingMiddleware(this.otel));
     this.app.use('*', identityMiddleware(identityService));
 
-    this.app.post('/api/auth/token/:product', (c) =>
-      handleTokenRequest(c, this.betterAuth, this.config, this.postgresClient.getPool())
-    );
+    this.app.post('/api/auth/token/:product', createTokenHandler(this.tokenService));
 
     this.app.on(['POST', 'GET'], '/api/auth/*', (c) => this.betterAuth.handler(c.req.raw));
 
-    this.app.get('/health', async (c) => {
-      try {
-        await this.postgresClient.getPool().query('SELECT 1');
-        return c.json({ status: 'ok' });
-      } catch {
-        return c.json({ status: 'error' }, 503);
-      }
-    });
+    this.app.get('/health', createHealthHandler(this.postgresClient));
 
     if (this.config.app.env === 'development') {
       this.app.route('/', createOpenAPIRouter(this.betterAuth));

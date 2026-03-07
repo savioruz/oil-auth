@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- Renamed `identity/` → `domains/identity/` to make the domain layer explicit
+- Restructured `transport/` → `transport/http/` with a dedicated `handler/` subdirectory; HTTP handlers are now thin adapters separate from the Hono server wiring
+- Replaced `@identity/*` tsconfig path alias with `@domains/*`
+
+### Added
+
+- `domains/token/` bounded context: `JwksRepository` interface, `PostgresJwksRepository` (raw SQL isolated from transport), `TokenService` (JWT signing with typed errors)
+- `transport/http/handler/token.handler.ts` — thin HTTP adapter for `POST /api/auth/token/:product`; maps typed domain errors to HTTP status codes
+- `transport/http/handler/health.handler.ts` — extracted health check handler
+- `scripts/e2e-server-start.ts` — runs migrations and starts the server before e2e tests, polling `/health` until ready
+- `scripts/e2e-server-stop.ts` — stops the server after e2e tests via PID file
+- `pretest:e2e` / `posttest:e2e` lifecycle scripts so `bun run test:e2e` is fully self-contained
+
+### Fixed
+
+- `test/e2e/helpers.ts` DB name mismatch (`oil_auth` → `oil_auth_test`) and missing `AUTH_ALLOWED_AUDIENCES` env var
+
+---
+
 ## [Unreleased] - 2026-03-01
 
 ### Added
@@ -31,3 +54,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Biome for linting and formatting
 - Unit, integration, and e2e test scaffolding
 - `README.md`, `LICENSE` (MIT), `CODE_OF_CONDUCT.md`, `.env.example`
+

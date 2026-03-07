@@ -1,5 +1,5 @@
-import { IdentityService } from '@identity/service';
-import { UserIdentity } from '@identity/types';
+import type { IdentityService } from '@domains/identity/service';
+import type { UserIdentity } from '@domains/identity/types';
 import type { MiddlewareHandler } from 'hono';
 
 export interface IdentityContext {

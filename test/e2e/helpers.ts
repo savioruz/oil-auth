@@ -42,13 +42,13 @@ export function generateRandomPassword(): string {
 export function getTestEnv(): Record<string, string> {
   return {
     APP_ENV: 'test',
-    APP_PORT: '3001',
+    APP_PORT: '3000',
     APP_CORS_ENABLE: 'true',
     APP_CORS_ALLOW_CREDENTIALS: 'true',
-    APP_CORS_ALLOWED_ORIGINS: 'http://localhost:3001',
+    APP_CORS_ALLOWED_ORIGINS: 'http://localhost:3000',
     DB_POSTGRES_HOST: 'localhost',
     DB_POSTGRES_PORT: '5432',
-    DB_POSTGRES_NAME: 'oil_auth',
+    DB_POSTGRES_NAME: 'oil_auth_test',
     DB_POSTGRES_USER: 'postgres',
     DB_POSTGRES_PASSWORD: 'postgres',
     DB_POSTGRES_SSL_MODE: 'disable',
@@ -56,9 +56,10 @@ export function getTestEnv(): Record<string, string> {
     REDIS_PORT: '6379',
     OTEL_ENABLED: 'false',
     LOG_LEVEL: 'error',
-    AUTH_BASE_URL: 'http://localhost:3001',
+    AUTH_BASE_URL: 'http://localhost:3000',
     AUTH_SECRET_KEY: 'loremipsumdolorsitametconsecteturadipiscingelit',
     AUTH_REQUIRE_EMAIL_VERIFICATION: 'false',
-    AUTH_TRUSTED_ORIGINS: 'http://localhost:3001',
+    AUTH_TRUSTED_ORIGINS: 'http://localhost:3000',
+    AUTH_ALLOWED_AUDIENCES: 'productA,productB',
   };
 }

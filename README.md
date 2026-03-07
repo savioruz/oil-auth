@@ -39,7 +39,9 @@ A lightweight, self-hosted authentication microservice built with [Bun](https://
 src/
 ├── cmd/server/           # Entrypoint — wires all dependencies and starts Bun server
 ├── config/               # Config schema (zod), env helpers, typed Config export
-├── identity/             # IdentityService, IdentityProvider interface, domain types
+├── domains/
+│   ├── identity/         # IdentityService, IdentityProvider interface, domain types
+│   └── token/            # TokenService, JwksRepository interface + PostgreSQL impl
 ├── infras/
 │   ├── logger/           # Pino logger factory
 │   ├── otel/             # OpenTelemetry SDK setup
@@ -55,8 +57,12 @@ src/
 │       ├── schema/       # DB table/column mapping + createSchema() override system
 │       └── service.ts    # BetterAuthService class, Auth type
 └── transport/
-    ├── http.ts           # HttpServer — middleware stack, health check, route mounting
-    └── router.ts         # Auth route handlers (/sign-up, /sign-in, /session, /sign-out)
+    └── http/
+        ├── server.ts     # HttpServer — middleware stack, health check, route mounting
+        ├── openapi.ts    # /openapi.json + /docs (Scalar UI, dev only)
+        └── handler/
+            ├── token.handler.ts   # POST /api/auth/token/:product
+            └── health.handler.ts  # GET /health
 ```
 
 ---
@@ -150,6 +156,8 @@ docker compose -f deployments/app.yml up
 | `POST` | `/api/auth/sign-in` | Authenticate and receive a session |
 | `GET` | `/api/auth/session` | Retrieve the current session |
 | `POST` | `/api/auth/sign-out` | Invalidate the current session |
+| `POST` | `/api/auth/token/:product` | Issue a product-scoped JWT for a valid session |
+| `GET` | `/api/auth/jwks` | JWKS endpoint for offline JWT verification |
 
 #### Sign up
 
@@ -180,6 +188,20 @@ curl http://localhost:3000/api/auth/session \
 curl -X POST http://localhost:3000/api/auth/sign-out \
   -H 'Cookie: better-auth.session_token=<token>'
 ```
+
+#### Issue a product-scoped JWT
+
+```bash
+curl -X POST http://localhost:3000/api/auth/token/productA \
+  -H 'Authorization: Bearer <session-token>'
+# or via cookie
+curl -X POST http://localhost:3000/api/auth/token/productA \
+  -H 'Cookie: better-auth.session_token=<token>'
+```
+
+Returns `{ "token": "<jwt>" }`. The JWT carries `email`, `role`, `sid` claims and is signed with EdDSA. Verify offline using the `/api/auth/jwks` endpoint.
+
+Valid products are configured via `AUTH_ALLOWED_AUDIENCES`.
 
 ---
 
@@ -223,14 +245,19 @@ curl -X POST http://localhost:3000/api/auth/sign-out \
 | `DB_POSTGRES_PASSWORD` | `` | Database password |
 | `DB_POSTGRES_SSL_MODE` | `disable` | `disable` \| `require` |
 | `DB_POSTGRES_TIMEZONE` | `UTC` | Database timezone |
-| `CACHE_REDIS_HOST` | `localhost` | Redis host |
-| `CACHE_REDIS_PORT` | `6379` | Redis port |
-| `CACHE_REDIS_PASSWORD` | `` | Redis password |
-| `CACHE_REDIS_DB` | `0` | Redis database index |
-| `CACHE_REDIS_TLS` | `false` | Enable Redis TLS |
+| `REDIS_HOST` | `localhost` | Redis host |
+| `REDIS_PORT` | `6379` | Redis port |
+| `REDIS_PASSWORD` | `` | Redis password |
+| `REDIS_DB` | `0` | Redis database index |
+| `REDIS_TLS` | `false` | Enable Redis TLS |
 | `SESSION_EXPIRES_IN` | `604800` | Session TTL in seconds (7 days) |
 | `SESSION_UPDATE_AGE` | `86400` | Session refresh threshold in seconds (1 day) |
 | `SESSION_COOKIE_CACHE_MAX_AGE` | `300` | Redis cookie cache TTL in seconds (5 min) |
+| `AUTH_BASE_URL` | `` | Public base URL of this service |
+| `AUTH_SECRET_KEY` | `` | Secret key for session signing (min 32 chars) |
+| `AUTH_ALLOWED_AUDIENCES` | `` | Comma-separated list of valid JWT audience values |
+| `AUTH_REQUIRE_EMAIL_VERIFICATION` | `false` | Require email verification before sign-in |
+| `AUTH_TRUSTED_ORIGINS` | `` | Comma-separated trusted origins for CSRF |
 | `OTEL_ENABLED` | `false` | Enable OpenTelemetry |
 | `OTEL_PROTOCOL` | `grpc` | `grpc` \| `http` |
 | `OTEL_ENDPOINT` | `localhost:4317` | OTLP collector endpoint |

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { AuthTokens, UserIdentity } from '@identity/types';
+import type { AuthTokens, UserIdentity } from '@domains/identity/types';
 
 describe('Identity Types', () => {
   test('UserIdentity should have required fields', () => {

@@ -1,4 +1,4 @@
-import { UserIdentity } from './types';
+import type { UserIdentity } from './types';
 
 export interface IdentityProvider {
   verify(token: string): Promise<UserIdentity | null>;
