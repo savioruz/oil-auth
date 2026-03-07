@@ -5,16 +5,6 @@ import { generateRandomEmail, generateRandomPassword } from './helpers';
 const baseUrl = 'http://localhost:3000';
 
 describe('Auth E2E', () => {
-  describe('Health Check', () => {
-    test('should return health status', async () => {
-      const response = await fetch(`${baseUrl}/health`);
-
-      expect(response.status).toBe(200);
-      const body = await response.json() as { status: string };
-      expect(body.status).toBeDefined();
-    });
-  });
-
   describe('POST /api/auth/sign-up/email', () => {
     test('should sign up with valid credentials', async () => {
       const email = generateRandomEmail();

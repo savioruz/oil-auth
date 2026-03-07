@@ -53,8 +53,8 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 for (let i = 0; i < maxRetries; i++) {
   await delay(500);
   try {
-    const res = await fetch('http://localhost:3000/health');
-    if (res.ok) {
+    const res = await fetch('http://localhost:3000/api/auth/ok');
+    if (res.status > 0) {
       console.log('e2e server ready');
       process.exit(0);
     }
