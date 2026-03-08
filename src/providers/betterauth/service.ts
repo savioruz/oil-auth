@@ -77,6 +77,14 @@ export class BetterAuthService {
           },
         }),
       ],
+      ...(config.oauth.google && {
+        socialProviders: {
+          google: {
+            clientId: config.oauth.google.clientId,
+            clientSecret: config.oauth.google.clientSecret,
+          },
+        },
+      }),
       ...restSchema,
     });
   }
