@@ -46,7 +46,8 @@ describe('Config', () => {
     expect(cfg.oauth.google).toBeNull();
 
     if (originalClientId !== undefined) process.env.OAUTH_GOOGLE_CLIENT_ID = originalClientId;
-    if (originalClientSecret !== undefined) process.env.OAUTH_GOOGLE_CLIENT_SECRET = originalClientSecret;
+    if (originalClientSecret !== undefined)
+      process.env.OAUTH_GOOGLE_CLIENT_SECRET = originalClientSecret;
   });
 
   test('oauth.google should be non-null when env vars are present', () => {
