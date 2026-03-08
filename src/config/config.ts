@@ -52,6 +52,15 @@ const configSchema = z.object({
     trustedOrigins: z.array(z.string()).default([]),
     allowedAudiences: z.array(z.string()).default([]),
   }),
+  oauth: z.object({
+    google: z
+      .object({
+        clientId: z.string(),
+        clientSecret: z.string(),
+      })
+      .nullable()
+      .default(null),
+  }),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -106,6 +115,15 @@ export function loadConfig(): Config {
       requireEmailVerification: envBool('AUTH_REQUIRE_EMAIL_VERIFICATION', false),
       trustedOrigins: envArray('AUTH_TRUSTED_ORIGINS'),
       allowedAudiences: envArray('AUTH_ALLOWED_AUDIENCES'),
+    },
+    oauth: {
+      google:
+        env('OAUTH_GOOGLE_CLIENT_ID') && env('OAUTH_GOOGLE_CLIENT_SECRET')
+          ? {
+              clientId: env('OAUTH_GOOGLE_CLIENT_ID', ''),
+              clientSecret: env('OAUTH_GOOGLE_CLIENT_SECRET', ''),
+            }
+          : null,
     },
   };
 

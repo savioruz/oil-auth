@@ -2,7 +2,7 @@
   "name": "oil-auth",
   "type": "module",
   "scripts": {
-    "dev": "bun run src/cmd/server/main.ts",
+    "dev": "git config core.hooksPath .githooks && bun run src/cmd/server/main.ts",
     "migrate:generate": "bun x @better-auth/cli@latest generate --yes --config ./src/providers/betterauth/schema/auth.ts --output ./src/providers/betterauth/schema/schema.sql",
     "migrate:up": "bun x @better-auth/cli@latest migrate --yes --config ./src/providers/betterauth/schema/auth.ts",
     "start": "bun run src/cmd/server/main.ts",
