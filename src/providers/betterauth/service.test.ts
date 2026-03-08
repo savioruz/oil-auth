@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { BetterAuthService } from './service';
 
 const mockConfig = {
@@ -155,7 +155,9 @@ describe('BetterAuthService', () => {
       mockRedisClient as any
     );
 
-    expect((service.getAuth().options as any).emailAndPassword?.requireEmailVerification).toBe(false);
+    expect((service.getAuth().options as any).emailAndPassword?.requireEmailVerification).toBe(
+      false
+    );
   });
 
   test('should have trustedOrigins from config', () => {
@@ -181,11 +183,7 @@ describe('BetterAuthService', () => {
   });
 
   test('should have cookieCache disabled when redisClient is null', () => {
-    service = new BetterAuthService(
-      mockConfig as any,
-      mockPostgresClient as any,
-      null
-    );
+    service = new BetterAuthService(mockConfig as any, mockPostgresClient as any, null);
 
     const sessionConfig = (service.getAuth().options as any).session;
     expect(sessionConfig.cookieCache?.enabled).toBe(false);
@@ -193,11 +191,7 @@ describe('BetterAuthService', () => {
 
   test('should have cookieCache enabled when redisClient is provided', () => {
     const redisClient = { isReady: true } as any;
-    service = new BetterAuthService(
-      mockConfig as any,
-      mockPostgresClient as any,
-      redisClient
-    );
+    service = new BetterAuthService(mockConfig as any, mockPostgresClient as any, redisClient);
 
     const sessionConfig = (service.getAuth().options as any).session;
     expect(sessionConfig.cookieCache?.enabled).toBe(true);
