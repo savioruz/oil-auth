@@ -10,23 +10,35 @@ function buildConnectionString(): string {
   return `postgresql://${cfg.user}:${cfg.password}@${cfg.host}:${cfg.port}/${cfg.name}?sslmode=${cfg.sslMode}`;
 }
 
-export const auth = betterAuth({
-  database: new PgPool({
-    connectionString: buildConnectionString(),
-  }),
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: false,
-  },
-  plugins: [
-    openAPI(),
-    admin(),
-    bearer(),
-    jwt({
-      jwks: {
-        disablePrivateKeyEncryption: true,
+export function buildAuth() {
+  return betterAuth({
+    database: new PgPool({
+      connectionString: buildConnectionString(),
+    }),
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: false,
+    },
+    plugins: [
+      openAPI(),
+      admin(),
+      bearer(),
+      jwt({
+        jwks: {
+          disablePrivateKeyEncryption: true,
+        },
+      }),
+    ],
+    ...(config.oauth.google && {
+      socialProviders: {
+        google: {
+          clientId: config.oauth.google.clientId,
+          clientSecret: config.oauth.google.clientSecret,
+        },
       },
     }),
-  ],
-  ...schema,
-});
+    ...schema,
+  });
+}
+
+export const auth = buildAuth();
