@@ -10,34 +10,39 @@ import { BetterAuthProviderAdapter } from '@providers/betterauth/provider';
 import { BetterAuthService } from '@providers/betterauth/service';
 import { HttpServer } from '@transport/http/server';
 
-const logger = createLogger(config);
-const otel = createOtel(config, logger);
-const postgresClient = createPostgresClient(config, logger);
-const redisClient = createRedisClient(config, logger);
+let httpServer: ReturnType<typeof createHttpServer> | null = null;
 
-const betterAuthService = new BetterAuthService(config, postgresClient, redisClient);
-const betterAuth = betterAuthService.getAuth();
-const betterAuthProvider = new BetterAuthProviderAdapter(betterAuth);
+function createHttpServer() {
+  const logger = createLogger(config);
+  const otel = createOtel(config, logger);
+  const postgresClient = createPostgresClient(config, logger);
+  const redisClient = createRedisClient(config, logger);
 
-const identityService = new IdentityService({ provider: betterAuthProvider }, otel);
+  const betterAuthService = new BetterAuthService(config, postgresClient, redisClient);
+  const betterAuth = betterAuthService.getAuth();
+  const betterAuthProvider = new BetterAuthProviderAdapter(betterAuth);
 
-const jwksRepository = new PostgresJwksRepository(postgresClient.getPool());
-const tokenService = new TokenService(betterAuth, config, jwksRepository);
+  const identityService = new IdentityService({ provider: betterAuthProvider }, otel);
 
-const httpServer = new HttpServer(
-  config,
-  otel,
-  identityService,
-  betterAuth,
-  postgresClient,
-  logger,
-  tokenService
-);
+  const jwksRepository = new PostgresJwksRepository(postgresClient.getPool());
+  const tokenService = new TokenService(betterAuth, config, jwksRepository);
 
-const app = httpServer.getApp();
+  return new HttpServer(
+    config,
+    otel,
+    identityService,
+    betterAuth,
+    postgresClient,
+    logger,
+    tokenService
+  );
+}
 
 export default {
   async fetch(request: Request): Promise<Response> {
-    return app.fetch(request);
+    if (!httpServer) {
+      httpServer = createHttpServer();
+    }
+    return httpServer.getApp().fetch(request);
   },
 };
