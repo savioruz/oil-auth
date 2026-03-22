@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if command -v bun >/dev/null 2>&1; then
+  NODE_ENGINE="bun"
+else
+  echo "Error: No package manager found (need bun)."
+  exit 1
+fi
+
+$NODE_ENGINE run lint:fix
+$NODE_ENGINE run typecheck
+
+exit $?

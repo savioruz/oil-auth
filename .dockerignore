@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Bun
+.bun/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+
+# Build / temp
+dist/
+tmp/
+
+# Tests
+integration_test/
+e2e_test/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Docs
+README.md
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+LICENSE
+docs/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
