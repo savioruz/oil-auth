@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { BetterAuthService } from './service';
 
 const mockConfig = {
@@ -220,7 +220,10 @@ describe('BetterAuthService', () => {
   });
 
   test('should use secure cookies in production', () => {
-    const prodConfig = { ...mockConfig, app: { ...mockConfig.app, env: 'production' as const } };
+    const prodConfig = {
+      ...mockConfig,
+      app: { ...mockConfig.app, env: 'production' as const },
+    };
     service = new BetterAuthService(
       prodConfig as any,
       mockPostgresClient as any,
@@ -231,7 +234,10 @@ describe('BetterAuthService', () => {
   });
 
   test('should not use secure cookies in development', () => {
-    const devConfig = { ...mockConfig, app: { ...mockConfig.app, env: 'development' as const } };
+    const devConfig = {
+      ...mockConfig,
+      app: { ...mockConfig.app, env: 'development' as const },
+    };
     service = new BetterAuthService(
       devConfig as any,
       mockPostgresClient as any,
