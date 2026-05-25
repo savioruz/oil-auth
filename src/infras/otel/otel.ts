@@ -1,13 +1,18 @@
-import type { Config } from '@config/config';
-import type { Logger } from '@infras/logger/logger';
-import type { Context } from '@opentelemetry/api';
-import { context as otelContext, type Span, SpanStatusCode, trace } from '@opentelemetry/api';
-import { OTLPTraceExporter as OTLPGrpcExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { OTLPTraceExporter as OTLPHttpExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+import type { Config } from "@config/config";
+import type { Logger } from "@infras/logger/logger";
+import type { Context } from "@opentelemetry/api";
+import {
+  context as otelContext,
+  type Span,
+  SpanStatusCode,
+  trace,
+} from "@opentelemetry/api";
+import { OTLPTraceExporter as OTLPGrpcExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
+import { OTLPTraceExporter as OTLPHttpExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 
 export interface Otel {
   newScope(ctx: Context, scopeName: string, spanName: string): [Context, Scope];
@@ -49,13 +54,16 @@ class ScopeImpl implements Scope {
   }
 
   setAttribute(key: string, value: unknown): void {
-    if (typeof value === 'boolean') {
+    if (typeof value === "boolean") {
       this.span.setAttribute(key, value);
-    } else if (typeof value === 'string') {
+    } else if (typeof value === "string") {
       this.span.setAttribute(key, value);
-    } else if (typeof value === 'number') {
+    } else if (typeof value === "number") {
       this.span.setAttribute(key, value);
-    } else if (Array.isArray(value) && value.every((v) => typeof v === 'string')) {
+    } else if (
+      Array.isArray(value) &&
+      value.every((v) => typeof v === "string")
+    ) {
       this.span.setAttribute(key, value);
     } else {
       this.span.setAttribute(key, String(value));
@@ -74,35 +82,38 @@ class OtelImpl implements Otel {
   private tracer: ReturnType<typeof trace.getTracer>;
 
   constructor(config: Config, logger: Logger) {
-    const protocol = config.otel.protocol || 'grpc';
-    let endpoint = config.otel.endpoint || 'localhost:4317';
+    const protocol = config.otel.protocol || "grpc";
+    let endpoint = config.otel.endpoint || "localhost:4317";
 
     let traceExporter: OTLPGrpcExporter | OTLPHttpExporter;
-    if (protocol === 'grpc') {
+    if (protocol === "grpc") {
       let grpcEndpoint = endpoint;
-      if (grpcEndpoint.startsWith('http://') || grpcEndpoint.startsWith('https://')) {
-        grpcEndpoint = grpcEndpoint.replace(/^https?:\/\//, '');
+      if (
+        grpcEndpoint.startsWith("http://") ||
+        grpcEndpoint.startsWith("https://")
+      ) {
+        grpcEndpoint = grpcEndpoint.replace(/^https?:\/\//, "");
       }
       traceExporter = new OTLPGrpcExporter({
         url: `http://${grpcEndpoint}`,
         timeoutMillis: 30000,
       });
       logger.info(
-        { endpoint: grpcEndpoint, protocol: 'grpc', insecure: true },
-        'Using OTLP gRPC exporter'
+        { endpoint: grpcEndpoint, protocol: "grpc", insecure: true },
+        "Using OTLP gRPC exporter",
       );
     } else {
-      if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+      if (!endpoint.startsWith("http://") && !endpoint.startsWith("https://")) {
         endpoint = `http://${endpoint}`;
       }
       traceExporter = new OTLPHttpExporter({
         url: `${endpoint}/v1/traces`,
         timeoutMillis: 30000,
       });
-      logger.info({ endpoint, protocol: 'http' }, 'Using OTLP HTTP exporter');
+      logger.info({ endpoint, protocol: "http" }, "Using OTLP HTTP exporter");
     }
 
-    const resource = new Resource({
+    const resource = resourceFromAttributes({
       [ATTR_SERVICE_NAME]: config.app.name,
     });
 
@@ -112,15 +123,20 @@ class OtelImpl implements Otel {
     });
 
     this.sdk.start();
-    logger.info('OpenTelemetry initialized successfully');
+    logger.info("OpenTelemetry initialized successfully");
 
     this.tracer = trace.getTracer(config.app.name);
   }
 
-  newScope(_ctx: Context | undefined, _scopeName: string, spanName: string): [Context, Scope] {
+  newScope(
+    _ctx: Context | undefined,
+    _scopeName: string,
+    spanName: string,
+  ): [Context, Scope] {
     const activeCtx = otelContext.active();
     const parentCtx =
-      _ctx && typeof (_ctx as Context & { setValue: unknown }).setValue === 'function'
+      _ctx &&
+      typeof (_ctx as Context & { setValue: unknown }).setValue === "function"
         ? _ctx
         : activeCtx;
     const span = this.tracer.startSpan(spanName, undefined, parentCtx);
@@ -151,7 +167,7 @@ function createNoopOtel(): Otel {
 
 export function createOtel(config: Config, logger: Logger): Otel {
   if (!config.otel.enabled) {
-    logger.info('OpenTelemetry is disabled');
+    logger.info("OpenTelemetry is disabled");
 
     return createNoopOtel();
   }
