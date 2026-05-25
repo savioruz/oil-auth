@@ -4,7 +4,7 @@ import type { Context } from '@opentelemetry/api';
 import { context as otelContext, type Span, SpanStatusCode, trace } from '@opentelemetry/api';
 import { OTLPTraceExporter as OTLPGrpcExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { OTLPTraceExporter as OTLPHttpExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
@@ -102,7 +102,7 @@ class OtelImpl implements Otel {
       logger.info({ endpoint, protocol: 'http' }, 'Using OTLP HTTP exporter');
     }
 
-    const resource = new Resource({
+    const resource = resourceFromAttributes({
       [ATTR_SERVICE_NAME]: config.app.name,
     });
 
