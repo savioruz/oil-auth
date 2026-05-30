@@ -140,66 +140,13 @@ docker compose -f deployments/app.yml up
 
 ## API Reference
 
-### Health
+Interactive API documentation is available at [`/docs`](http://localhost:3000/docs) when running the development server.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Returns `{ status: "ok" }`. Returns `503` if the DB is unreachable. |
+---
 
-### Auth — prefix `/api/auth`
+## Sequence Diagram
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/auth/sign-up` | Create a new account |
-| `POST` | `/api/auth/sign-in` | Authenticate and receive a session |
-| `GET` | `/api/auth/session` | Retrieve the current session |
-| `POST` | `/api/auth/sign-out` | Invalidate the current session |
-| `POST` | `/api/auth/token/:product` | Issue a product-scoped JWT for a valid session |
-| `GET` | `/api/auth/jwks` | JWKS endpoint for offline JWT verification |
-
-#### Sign up
-
-```bash
-curl -X POST http://localhost:3000/api/auth/sign-up \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"user@example.com","password":"secret","name":"Alice"}'
-```
-
-#### Sign in
-
-```bash
-curl -X POST http://localhost:3000/api/auth/sign-in \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"user@example.com","password":"secret"}'
-```
-
-#### Get session
-
-```bash
-curl http://localhost:3000/api/auth/session \
-  -H 'Cookie: better-auth.session_token=<token>'
-```
-
-#### Sign out
-
-```bash
-curl -X POST http://localhost:3000/api/auth/sign-out \
-  -H 'Cookie: better-auth.session_token=<token>'
-```
-
-#### Issue a product-scoped JWT
-
-```bash
-curl -X POST http://localhost:3000/api/auth/token/productA \
-  -H 'Authorization: Bearer <session-token>'
-# or via cookie
-curl -X POST http://localhost:3000/api/auth/token/productA \
-  -H 'Cookie: better-auth.session_token=<token>'
-```
-
-Returns `{ "token": "<jwt>" }`. The JWT carries `email`, `role`, `sid` claims and is signed with EdDSA. Verify offline using the `/api/auth/jwks` endpoint.
-
-Valid products are configured via `AUTH_ALLOWED_AUDIENCES`.
+![Auth sequence diagram](docs/sequence-diagram.png)
 
 ---
 
