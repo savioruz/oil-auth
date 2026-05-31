@@ -51,6 +51,7 @@ export function makeMockConfig(): Config {
       trustedOrigins: ['http://localhost:3000'],
       allowedAudiences: [],
       resetPasswordExpiresIn: 3600,
+      jwtExpiresIn: 3600,
     },
     oauth: {
       google: null,

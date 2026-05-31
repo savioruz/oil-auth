@@ -121,7 +121,7 @@ export class BetterAuthService {
           },
           jwt: {
             issuer: config.auth.baseUrl,
-            expirationTime: '3h',
+            expirationTime: `${config.auth.jwtExpiresIn}s`,
             definePayload: ({ user }) => {
               const u = user as typeof user & { role?: string };
               return {

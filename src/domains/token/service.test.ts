@@ -24,6 +24,7 @@ const mockConfig = {
   auth: {
     allowedAudiences: ['productA', 'productB'],
     baseUrl: 'https://auth.example.com',
+    jwtExpiresIn: 10800,
   },
 } as unknown as Config;
 

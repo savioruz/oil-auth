@@ -52,6 +52,7 @@ const configSchema = z.object({
     trustedOrigins: z.array(z.string()).default([]),
     allowedAudiences: z.array(z.string()).default([]),
     resetPasswordExpiresIn: z.number().default(3600),
+    jwtExpiresIn: z.number().default(3600),
   }),
   oauth: z.object({
     google: z
@@ -132,6 +133,7 @@ export function loadConfig(): Config {
       trustedOrigins: envArray('AUTH_TRUSTED_ORIGINS'),
       allowedAudiences: envArray('AUTH_ALLOWED_AUDIENCES'),
       resetPasswordExpiresIn: envNum('AUTH_RESET_PASSWORD_EXPIRES_IN', 3600),
+      jwtExpiresIn: envNum('AUTH_JWT_EXPIRES_IN', 3600),
     },
     oauth: {
       google:
