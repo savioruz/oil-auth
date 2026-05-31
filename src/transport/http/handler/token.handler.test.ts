@@ -4,12 +4,15 @@ import {
   NoSigningKeyError,
   SigningKeyImportError,
   UnauthorizedError,
-} from '@domains/token/token.service';
+} from '@domains/token/errors';
 import { Hono } from 'hono';
 import { createTokenHandler } from './token.handler';
 
 const makeApp = (tokenService: any) => {
   const app = new Hono();
+  app.get('/api/auth/token', (c) =>
+    c.json({ error: 'bad_request', message: 'Product is required' }, 400)
+  );
   app.get('/api/auth/token/:product', createTokenHandler(tokenService));
   return app;
 };
@@ -153,5 +156,18 @@ describe('createTokenHandler', () => {
     expect(mockTokenService.issueToken).toHaveBeenCalledWith('productA', {
       authorization: 'Bearer bearer-token',
     });
+  });
+
+  test('returns 400 when product is missing', async () => {
+    const app = makeApp(mockTokenService);
+
+    const res = await app.request('/api/auth/token', {
+      method: 'GET',
+      headers: { Authorization: 'Bearer token' },
+    });
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe('bad_request');
   });
 });

@@ -14,6 +14,7 @@ export function createOpenAPIRouter(auth: Auth): Hono {
       paths?: Record<string, unknown>;
     };
     openApiSpec.paths ??= {};
+    delete openApiSpec.paths['/token'];
     openApiSpec.paths['/token/{product}'] = {
       get: {
         summary: '/token/{product}',

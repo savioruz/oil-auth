@@ -1,5 +1,5 @@
 import type { Config } from '@config/config';
-import type { TokenService } from '@domains/token/token.service';
+import type { TokenService } from '@domains/token/service';
 import type { Logger } from '@infras/logger/logger';
 import type { PostgresClient } from '@infras/postgres/client';
 import type { Auth } from '@providers/betterauth/service';
@@ -18,6 +18,7 @@ export interface RouteDeps {
 export function registerRoutes(app: Hono, deps: RouteDeps): void {
   const { config, tokenService, betterAuth, logger } = deps;
 
+  app.get('/api/auth/token', (c) => c.notFound());
   app.get('/api/auth/token/:product', createTokenHandler(tokenService));
 
   app.on(['POST', 'GET'], '/api/auth/*', (c) => betterAuth.handler(c.req.raw));

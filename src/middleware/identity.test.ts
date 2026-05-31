@@ -1,36 +1,36 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import type { MockProvider } from '@domains/identity/provider.mock';
+import { makeMockProvider } from '@domains/identity/provider.mock';
 import { Hono } from 'hono';
 import { identityMiddleware } from './identity';
 
-const makeApp = (mockService: any) => {
+const makeApp = (mockService: MockProvider) => {
   const app = new Hono();
-  app.use('*', identityMiddleware(mockService));
+  app.use('*', identityMiddleware(mockService as any));
   app.get('/test', (c) => c.json({ identity: c.identity }));
   return app;
 };
 
 describe('identityMiddleware', () => {
-  let mockService: any;
+  let mockService: MockProvider;
 
   beforeEach(() => {
-    mockService = {
-      verify: mock(() =>
-        Promise.resolve({
-          id: 'user-123',
-          email: 'test@example.com',
-          emailVerified: true,
-          role: 'user',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-      ),
-      signOut: mock(() => Promise.resolve()),
-    };
+    mockService = makeMockProvider();
+    mockService.verify.mockImplementation(() =>
+      Promise.resolve({
+        id: 'user-123',
+        email: 'test@example.com',
+        emailVerified: true,
+        role: 'user',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+    );
   });
 
   test('attaches identityService to context', async () => {
     const app = new Hono();
-    app.use('*', identityMiddleware(mockService));
+    app.use('*', identityMiddleware(mockService as any));
     app.get('/test', (c) => c.json({ hasService: !!c.identityService }));
 
     const res = await app.request('/test');
@@ -45,7 +45,8 @@ describe('identityMiddleware', () => {
       headers: { Authorization: 'Bearer my-token' },
     });
 
-    expect(mockService.verify).toHaveBeenCalledWith('my-token');
+    expect(mockService.verify).toHaveBeenCalled();
+    expect((mockService.verify as ReturnType<typeof mock>).mock.calls[0][0]).toBe('my-token');
     const body = (await res.json()) as Record<string, any>;
     expect(body.identity?.id).toBe('user-123');
   });
@@ -57,7 +58,8 @@ describe('identityMiddleware', () => {
       headers: { Cookie: 'better-auth.session_token=cookie-token; other=value' },
     });
 
-    expect(mockService.verify).toHaveBeenCalledWith('cookie-token');
+    expect(mockService.verify).toHaveBeenCalled();
+    expect((mockService.verify as ReturnType<typeof mock>).mock.calls[0][0]).toBe('cookie-token');
     const body = (await res.json()) as Record<string, any>;
     expect(body.identity?.id).toBe('user-123');
   });
@@ -72,7 +74,8 @@ describe('identityMiddleware', () => {
       },
     });
 
-    expect(mockService.verify).toHaveBeenCalledWith('bearer-token');
+    expect(mockService.verify).toHaveBeenCalled();
+    expect((mockService.verify as ReturnType<typeof mock>).mock.calls[0][0]).toBe('bearer-token');
   });
 
   test('sets identity to null when no auth header or cookie', async () => {
@@ -123,12 +126,30 @@ describe('identityMiddleware', () => {
 
   test('still calls next() even when identity is null', async () => {
     const app = new Hono();
-    app.use('*', identityMiddleware(mockService));
+    app.use('*', identityMiddleware(mockService as any));
     app.get('/test', (c) => c.json({ reached: true }));
 
     const res = await app.request('/test');
     expect(res.status).toBe(200);
     const body = (await res.json()) as Record<string, any>;
     expect(body.reached).toBe(true);
+  });
+
+  test('passes otelContext from c.get to identityService.verify', async () => {
+    const fakeOtelCtx = { kind: 'otel-context' } as any;
+    const verifyMock = mock(() => Promise.resolve(null));
+    const serviceWithVerify = { verify: verifyMock } as any;
+
+    const app = new Hono();
+    app.use('*', async (c, next) => {
+      c.set('otelContext', fakeOtelCtx);
+      await next();
+    });
+    app.use('*', identityMiddleware(serviceWithVerify));
+    app.get('/test', (c) => c.json({}));
+
+    await app.request('/test', { headers: { Authorization: 'Bearer some-token' } });
+
+    expect(verifyMock).toHaveBeenCalledWith('some-token', fakeOtelCtx);
   });
 });

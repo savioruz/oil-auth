@@ -7,9 +7,13 @@ A lightweight, self-hosted authentication microservice built with [Bun](https://
 ## Features
 
 - Email & password authentication — sign-up, sign-in, sign-out, session retrieval
+- Two-factor authentication (TOTP and/or email OTP), configurable via env
+- Password reset email with configurable expiry
+- File-based HTML email templates (customizable in `src/templates/email/`)
+- SMTP email delivery via nodemailer
 - Session cookie cache via Redis (falls back gracefully when Redis is absent)
 - Custom snake_case database schema through better-auth's schema mapping
-- OpenTelemetry distributed tracing (gRPC or HTTP exporter)
+- Production-ready OpenTelemetry: named tracers, `X-Request-ID` propagation, child span linking
 - Structured JSON logging with [pino](https://getpino.io) (pretty in development)
 - CORS and identity middleware
 - Multi-stage Docker build with non-root user
@@ -27,6 +31,7 @@ A lightweight, self-hosted authentication microservice built with [Bun](https://
 | Database | PostgreSQL 16 · [`pg`](https://node-postgres.com) |
 | Cache | Redis 7 · [ioredis](https://github.com/redis/ioredis) |
 | Tracing | [OpenTelemetry Node SDK](https://opentelemetry.io) |
+| Email | [nodemailer](https://nodemailer.com) |
 | Logging | [pino](https://getpino.io) |
 | Config validation | [zod](https://zod.dev) |
 | Linting / formatting | [Biome](https://biomejs.dev) |
@@ -40,27 +45,30 @@ src/
 ├── cmd/server/           # Entrypoint — wires all dependencies and starts Bun server
 ├── config/               # Config schema (zod), env helpers, typed Config export
 ├── domains/
-│   ├── identity/         # IdentityService, IdentityProvider interface, domain types
-│   └── token/            # TokenService, JwksRepository interface + PostgreSQL impl
+│   ├── identity/         # IdentityService, identity port interface, domain types
+│   └── token/            # errors, Repository interface + PostgreSQL impl, TokenService
 ├── infras/
 │   ├── logger/           # Pino logger factory
 │   ├── otel/             # OpenTelemetry SDK setup
 │   ├── postgres/         # PostgresClient — pool wrapper with connection logging
-│   └── redis/            # RedisClient — ioredis wrapper with connection logging
+│   ├── redis/            # RedisClient — ioredis wrapper with connection logging
+│   └── smtp/             # SmtpClient — nodemailer wrapper, template loader
 ├── middleware/
 │   ├── identity.ts       # Attaches identity context to request
-│   └── tracing.ts        # OpenTelemetry span per request
+│   └── tracing.ts        # OpenTelemetry span per request, X-Request-ID
 ├── providers/
 │   └── betterauth/
 │       ├── hooks.ts      # Auth handler utility
-│       ├── provider.ts   # BetterAuthProviderAdapter (IdentityProvider impl)
+│       ├── provider.ts   # BetterAuthProviderAdapter (identity port impl)
 │       ├── schema/       # DB table/column mapping + createSchema() override system
-│       └── service.ts    # BetterAuthService class, Auth type
+│       └── service.ts    # BetterAuthService — better-auth config, 2FA, reset password
+├── templates/
+│   └── email/            # HTML email templates (two-factor-otp, email-verification, reset-password)
 └── transport/
     └── http/
         ├── server.ts     # HttpServer — middleware stack, health check, route mounting
         ├── openapi.ts    # /openapi.json + /docs (Scalar UI, dev only)
-        └── handler/      # http handler
+        └── handler/      # HTTP handlers
 ```
 
 ---
@@ -118,6 +126,38 @@ bun run dev
 ```
 
 Server is available at `http://localhost:3000`.
+
+---
+
+## Environment Variables
+
+See [.env.example](.env.example) for the full reference. Key variables by feature:
+
+### Two-Factor Authentication (2FA)
+
+| Variable | Default | Description |
+|---|---|---|
+| `AUTH_2FA_ENABLED` | `false` | Enable 2FA for sign-in |
+| `AUTH_2FA_METHOD` | `totp` | Method: `totp`, `otp`, or `totp,otp` |
+| `AUTH_2FA_OTP_EXPIRES_IN` | `300` | OTP expiry in seconds |
+| `AUTH_EMAIL_VERIFICATION_OTP_ENABLED` | `false` | Send OTP on signup |
+
+### SMTP (required for OTP and password reset)
+
+| Variable | Default | Description |
+|---|---|---|
+| `SMTP_HOST` | — | SMTP server host |
+| `SMTP_PORT` | `587` | SMTP server port |
+| `SMTP_SECURE` | `false` | Use TLS |
+| `SMTP_USER` | — | SMTP username |
+| `SMTP_PASSWORD` | — | SMTP password |
+| `SMTP_FROM` | `noreply@example.com` | Sender address |
+
+### Password Reset
+
+| Variable | Default | Description |
+|---|---|---|
+| `AUTH_RESET_PASSWORD_EXPIRES_IN` | `3600` | Reset token expiry in seconds |
 
 ---
 

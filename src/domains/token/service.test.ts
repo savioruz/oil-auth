@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { Config } from '@config/config';
+import { makeMockOtel } from '@infras/otel/otel.mock';
+import { makeMockAuth } from '@providers/betterauth/auth.mock';
 import { decodeJwt, decodeProtectedHeader } from 'jose';
-import type { JwksRepository } from './jwks.repository';
 import {
   InvalidAudienceError,
   NoSigningKeyError,
   SigningKeyImportError,
-  TokenService,
   UnauthorizedError,
-} from './token.service';
+} from './errors';
+import type { Repository } from './repository';
+import { TokenService } from './service';
 
 // Real extractable EdDSA private key for happy-path tests
 const TEST_PRIVATE_KEY_JWK = JSON.stringify({
@@ -32,15 +34,13 @@ const mockSession = {
 
 describe('TokenService', () => {
   let mockAuth: any;
-  let mockJwksRepository: JwksRepository;
+  let mockJwksRepository: Repository;
   let tokenService: TokenService;
+  let mockOtel: ReturnType<typeof makeMockOtel>;
 
   beforeEach(() => {
-    mockAuth = {
-      api: {
-        getSession: mock(() => Promise.resolve(mockSession)),
-      },
-    };
+    mockAuth = makeMockAuth();
+    mockAuth.api.getSession.mockImplementation(() => Promise.resolve(mockSession));
 
     mockJwksRepository = {
       findActiveKey: mock(() =>
@@ -48,7 +48,8 @@ describe('TokenService', () => {
       ),
     };
 
-    tokenService = new TokenService(mockAuth, mockConfig, mockJwksRepository);
+    mockOtel = makeMockOtel();
+    tokenService = new TokenService(mockAuth, mockConfig, mockJwksRepository, mockOtel.otel);
   });
 
   describe('issueToken() — success', () => {
@@ -210,6 +211,53 @@ describe('TokenService', () => {
       await expect(
         tokenService.issueToken('productA', { authorization: 'Bearer token' })
       ).rejects.toBeInstanceOf(SigningKeyImportError);
+    });
+  });
+
+  describe('issueToken() — OTel', () => {
+    test('calls newScope with correct scope and span name', async () => {
+      await tokenService.issueToken('productA', { authorization: 'Bearer token' });
+
+      expect(mockOtel.otel.newScope).toHaveBeenCalledWith(
+        expect.anything(),
+        'token',
+        'issue-token'
+      );
+    });
+
+    test('sets token.product attribute to the product name', async () => {
+      await tokenService.issueToken('productA', { authorization: 'Bearer token' });
+
+      expect(mockOtel.scope.setAttribute).toHaveBeenCalledWith('token.product', 'productA');
+    });
+
+    test('sets token.issued: true on success', async () => {
+      await tokenService.issueToken('productA', { authorization: 'Bearer token' });
+
+      expect(mockOtel.scope.setAttribute).toHaveBeenCalledWith('token.issued', true);
+    });
+
+    test('sets token.issued: false and calls traceIfError on error', async () => {
+      await expect(
+        tokenService.issueToken('unknown-product', { authorization: 'Bearer token' })
+      ).rejects.toBeInstanceOf(InvalidAudienceError);
+
+      expect(mockOtel.scope.setAttribute).toHaveBeenCalledWith('token.issued', false);
+      expect(mockOtel.scope.traceIfError).toHaveBeenCalled();
+    });
+
+    test('calls scope.end() on success', async () => {
+      await tokenService.issueToken('productA', { authorization: 'Bearer token' });
+
+      expect(mockOtel.scope.end).toHaveBeenCalled();
+    });
+
+    test('calls scope.end() on error', async () => {
+      await expect(
+        tokenService.issueToken('unknown-product', { authorization: 'Bearer token' })
+      ).rejects.toBeInstanceOf(InvalidAudienceError);
+
+      expect(mockOtel.scope.end).toHaveBeenCalled();
     });
   });
 });

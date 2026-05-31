@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { PostgresJwksRepository } from './jwks.postgres';
+import { TokenRepository } from './repository';
 
 describe('PostgresJwksRepository', () => {
   let mockPool: any;
-  let repository: PostgresJwksRepository;
+  let repository: TokenRepository;
 
   beforeEach(() => {
     mockPool = {
@@ -13,7 +13,7 @@ describe('PostgresJwksRepository', () => {
         })
       ),
     };
-    repository = new PostgresJwksRepository(mockPool);
+    repository = new TokenRepository(mockPool);
   });
 
   test('returns the active key when a row exists', async () => {

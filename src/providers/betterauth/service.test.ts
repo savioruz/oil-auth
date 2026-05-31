@@ -1,67 +1,9 @@
 import { afterEach, describe, expect, test } from 'bun:test';
+import { makeMockConfig } from '@config/config.mock';
+import { mockPostgresClient } from '@infras/postgres/postgres.mock';
 import { BetterAuthService } from './service';
 
-const mockConfig = {
-  app: {
-    name: 'test-app',
-    port: 3000,
-    env: 'test' as const,
-  },
-  cors: {
-    enabled: true,
-    allowCredentials: true,
-    allowedHeaders: ['Accept', 'Authorization'],
-    allowedMethods: ['GET', 'POST'],
-    allowedOrigins: ['http://localhost:3000'],
-    maxAge: 300,
-  },
-  database: {
-    host: 'localhost',
-    port: 5432,
-    name: 'test_db',
-    user: 'test_user',
-    password: 'test_password',
-    sslMode: 'disable' as const,
-  },
-  redis: {
-    host: 'localhost',
-    port: 6379,
-    password: 'test_password',
-    db: 0,
-    tls: false,
-  },
-  otel: {
-    enabled: false,
-    protocol: 'grpc' as const,
-    endpoint: 'localhost:4317',
-  },
-  session: {
-    expiresIn: 604800,
-    updateAge: 86400,
-    cookieCacheMaxAge: 300,
-  },
-  log: {
-    level: 'info' as const,
-  },
-  auth: {
-    baseUrl: 'http://localhost:3000',
-    secretKey: 'test-secret-key',
-    requireEmailVerification: false,
-    trustedOrigins: ['http://localhost:3000'],
-    allowedAudiences: [],
-  },
-  oauth: {
-    google: null,
-  },
-};
-
-const mockPostgresClient = {
-  getPool: () => ({
-    query: () => {},
-    on: () => {},
-    connect: () => {},
-  }),
-};
+const mockConfig = makeMockConfig();
 
 const mockRedisClient = null;
 
@@ -146,18 +88,6 @@ describe('BetterAuthService', () => {
     );
 
     expect((service.getAuth().options as any).emailAndPassword?.enabled).toBe(true);
-  });
-
-  test('should have emailAndPassword requireEmailVerification from config', () => {
-    service = new BetterAuthService(
-      mockConfig as any,
-      mockPostgresClient as any,
-      mockRedisClient as any
-    );
-
-    expect((service.getAuth().options as any).emailAndPassword?.requireEmailVerification).toBe(
-      false
-    );
   });
 
   test('should have trustedOrigins from config', () => {

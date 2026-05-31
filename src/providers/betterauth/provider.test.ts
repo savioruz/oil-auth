@@ -1,18 +1,15 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import type { MockAuth } from '@providers/betterauth/auth.mock';
+import { makeMockAuth } from '@providers/betterauth/auth.mock';
 import { BetterAuthProviderAdapter } from './provider';
 
 describe('BetterAuthProviderAdapter', () => {
-  let mockAuth: any;
+  let mockAuth: MockAuth;
   let provider: BetterAuthProviderAdapter;
 
   beforeEach(() => {
-    mockAuth = {
-      api: {
-        getSession: mock(),
-        signOut: mock(),
-      },
-    };
-    provider = new BetterAuthProviderAdapter(mockAuth);
+    mockAuth = makeMockAuth();
+    provider = new BetterAuthProviderAdapter(mockAuth as any);
   });
 
   describe('verify()', () => {
@@ -53,6 +50,21 @@ describe('BetterAuthProviderAdapter', () => {
       const result = await provider.verify('token');
 
       expect(result).toBeNull();
+    });
+
+    test('should log error when getSession throws', async () => {
+      const mockLogger = { error: mock() } as any;
+      const providerWithLogger = new BetterAuthProviderAdapter(mockAuth as any, mockLogger);
+      const err = new Error('Network error');
+      mockAuth.api.getSession.mockImplementation(() => Promise.reject(err));
+
+      const result = await providerWithLogger.verify('token');
+
+      expect(result).toBeNull();
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        { err },
+        'BetterAuthProviderAdapter.verify failed'
+      );
     });
 
     test('should call getSession with correct authorization header', async () => {

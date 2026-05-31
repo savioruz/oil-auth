@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["src/**", "src/cmd/wrangler/**"]
+    "includes": ["src/**", "!src/templates"]
   },
   "javascript": {
     "formatter": {

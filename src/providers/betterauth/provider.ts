@@ -1,5 +1,6 @@
 import type { IdentityProvider } from '@domains/identity/provider';
 import type { UserIdentity } from '@domains/identity/types';
+import type { Logger } from '@infras/logger/logger';
 import type { Session, User } from 'better-auth/types';
 import type { Auth } from './service';
 
@@ -18,7 +19,10 @@ function mapSessionToUserIdentity(_session: Session, user: User): UserIdentity {
 }
 
 export class BetterAuthProviderAdapter implements IdentityProvider {
-  constructor(private auth: Auth) {}
+  constructor(
+    private auth: Auth,
+    private logger?: Logger
+  ) {}
 
   async verify(token: string): Promise<UserIdentity | null> {
     try {
@@ -33,7 +37,8 @@ export class BetterAuthProviderAdapter implements IdentityProvider {
       }
 
       return mapSessionToUserIdentity(result.session, result.user);
-    } catch {
+    } catch (err) {
+      this.logger?.error({ err }, 'BetterAuthProviderAdapter.verify failed');
       return null;
     }
   }

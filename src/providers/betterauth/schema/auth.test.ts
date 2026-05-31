@@ -12,11 +12,6 @@ describe('auth.ts (schema export)', () => {
     expect((auth as any).options.emailAndPassword?.enabled).toBe(true);
   });
 
-  test('should have emailAndPassword requireEmailVerification set to false', () => {
-    const { auth } = require('./auth');
-    expect((auth as any).options.emailAndPassword?.requireEmailVerification).toBe(false);
-  });
-
   test('should have plugins configured', () => {
     const { auth } = require('./auth');
     expect((auth as any).options.plugins).toBeDefined();

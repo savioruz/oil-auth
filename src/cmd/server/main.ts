@@ -1,11 +1,12 @@
 import { config } from '@config/config';
 import { IdentityService } from '@domains/identity/service';
-import { PostgresJwksRepository } from '@domains/token/jwks.postgres';
-import { TokenService } from '@domains/token/token.service';
+import { TokenRepository } from '@domains/token/repository';
+import { TokenService } from '@domains/token/service';
 import { createLogger } from '@infras/logger/logger';
 import { createOtel } from '@infras/otel/otel';
 import { createPostgresClient } from '@infras/postgres/client';
 import { createRedisClient } from '@infras/redis/client';
+import { createSmtpClient } from '@infras/smtp/client';
 import { BetterAuthProviderAdapter } from '@providers/betterauth/provider';
 import { BetterAuthService } from '@providers/betterauth/service';
 import { HttpServer } from '@transport/http/server';
@@ -16,15 +17,16 @@ async function main() {
   const otel = createOtel(config, logger);
   const postgresClient = createPostgresClient(config, logger);
   const redisClient = createRedisClient(config, logger);
+  const smtpClient = createSmtpClient(config, logger);
 
-  const betterAuthService = new BetterAuthService(config, postgresClient, redisClient);
+  const betterAuthService = new BetterAuthService(config, postgresClient, redisClient, smtpClient);
   const betterAuth = betterAuthService.getAuth();
-  const betterAuthProvider = new BetterAuthProviderAdapter(betterAuth);
+  const betterAuthProvider = new BetterAuthProviderAdapter(betterAuth, logger);
 
   const identityService = new IdentityService({ provider: betterAuthProvider }, otel);
 
-  const jwksRepository = new PostgresJwksRepository(postgresClient.getPool());
-  const tokenService = new TokenService(betterAuth, config, jwksRepository);
+  const tokenRepository = new TokenRepository(postgresClient.getPool());
+  const tokenService = new TokenService(betterAuth, config, tokenRepository, otel);
 
   const httpServer = new HttpServer(
     config,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { AuthTokens, UserIdentity } from '@domains/identity/types';
+import type { UserIdentity } from '@domains/identity/types';
 
 describe('Identity Types', () => {
   test('UserIdentity should have required fields', () => {
@@ -33,25 +33,5 @@ describe('Identity Types', () => {
 
     expect(user.name).toBe('John Doe');
     expect(user.image).toBe('https://example.com/avatar.png');
-  });
-
-  test('AuthTokens should have required fields', () => {
-    const tokens: AuthTokens = {
-      accessToken: 'token123',
-      expiresAt: Date.now() + 3600000,
-    };
-
-    expect(tokens.accessToken).toBe('token123');
-    expect(tokens.expiresAt).toBeGreaterThan(Date.now());
-  });
-
-  test('AuthTokens should have optional refreshToken', () => {
-    const tokens: AuthTokens = {
-      accessToken: 'token123',
-      refreshToken: 'refresh123',
-      expiresAt: Date.now() + 3600000,
-    };
-
-    expect(tokens.refreshToken).toBe('refresh123');
   });
 });

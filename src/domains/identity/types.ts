@@ -8,9 +8,3 @@ export interface UserIdentity {
   createdAt: Date;
   updatedAt: Date;
 }
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken?: string;
-  expiresAt: number;
-}
