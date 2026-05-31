@@ -1,6 +1,9 @@
 services:
   app:
-    build: .
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: oil-auth-app
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
