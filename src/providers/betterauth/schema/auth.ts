@@ -4,16 +4,16 @@ import { Pool as PgPool } from 'pg';
 import { config } from '@/config/config';
 import { schema } from './schema';
 
-function buildConnectionString(): string {
+function buildPool(): PgPool {
   const cfg = config.database;
-
-  return `postgresql://${cfg.user}:${cfg.password}@${cfg.host}:${cfg.port}/${cfg.name}?sslmode=${cfg.sslMode}`;
+  return new PgPool({
+    connectionString: `postgresql://${cfg.user}:${cfg.password}@${cfg.host}:${cfg.port}/${cfg.name}`,
+    ssl: cfg.sslMode === 'disable' ? false : { rejectUnauthorized: false },
+  });
 }
 
 export const auth = betterAuth({
-  database: new PgPool({
-    connectionString: buildConnectionString(),
-  }),
+  database: buildPool(),
   emailAndPassword: {
     enabled: true,
   },
