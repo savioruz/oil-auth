@@ -1,5 +1,5 @@
 import { betterAuth } from 'better-auth';
-import { admin, bearer, jwt, openAPI } from 'better-auth/plugins';
+import { admin, bearer, jwt, openAPI, twoFactor } from 'better-auth/plugins';
 import { Pool as PgPool } from 'pg';
 import { config } from '@/config/config';
 import { schema } from './schema';
@@ -16,7 +16,6 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
   },
   plugins: [
     openAPI(),
@@ -27,6 +26,7 @@ export const auth = betterAuth({
         disablePrivateKeyEncryption: true,
       },
     }),
+    twoFactor(),
   ],
   ...schema,
 });

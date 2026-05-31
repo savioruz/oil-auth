@@ -48,9 +48,10 @@ const configSchema = z.object({
   auth: z.object({
     baseUrl: z.string().default('http://localhost:3000'),
     secretKey: z.string().default('your_secret_key'),
-    requireEmailVerification: z.boolean().default(false),
+
     trustedOrigins: z.array(z.string()).default([]),
     allowedAudiences: z.array(z.string()).default([]),
+    resetPasswordExpiresIn: z.number().default(3600),
   }),
   oauth: z.object({
     google: z
@@ -61,6 +62,22 @@ const configSchema = z.object({
       .nullable()
       .default(null),
   }),
+  twoFactor: z.object({
+    enabled: z.boolean().default(false),
+    method: z.array(z.enum(['totp', 'otp'])).default(['totp']),
+    emailVerificationOtpEnabled: z.boolean().default(false),
+    otpExpiresIn: z.number().default(300),
+  }),
+  smtp: z
+    .object({
+      host: z.string().default('localhost'),
+      port: z.number().default(587),
+      secure: z.boolean().default(false),
+      user: z.string().optional(),
+      password: z.string().optional(),
+      from: z.string().default('noreply@example.com'),
+    })
+    .optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -112,9 +129,9 @@ export function loadConfig(): Config {
     auth: {
       baseUrl: env('AUTH_BASE_URL', 'http://localhost:3000'),
       secretKey: env('AUTH_SECRET_KEY', 'your_secret_key'),
-      requireEmailVerification: envBool('AUTH_REQUIRE_EMAIL_VERIFICATION', false),
       trustedOrigins: envArray('AUTH_TRUSTED_ORIGINS'),
       allowedAudiences: envArray('AUTH_ALLOWED_AUDIENCES'),
+      resetPasswordExpiresIn: envNum('AUTH_RESET_PASSWORD_EXPIRES_IN', 3600),
     },
     oauth: {
       google:
@@ -125,6 +142,27 @@ export function loadConfig(): Config {
             }
           : null,
     },
+    twoFactor: {
+      enabled: envBool('AUTH_2FA_ENABLED', false),
+      method: (() => {
+        const methods = envArray('AUTH_2FA_METHOD').filter(
+          (m): m is 'totp' | 'otp' => m === 'totp' || m === 'otp'
+        );
+        return methods.length > 0 ? methods : ['totp'];
+      })(),
+      emailVerificationOtpEnabled: envBool('AUTH_EMAIL_VERIFICATION_OTP_ENABLED', false),
+      otpExpiresIn: envNum('AUTH_2FA_OTP_EXPIRES_IN', 300),
+    },
+    smtp: env('SMTP_HOST')
+      ? {
+          host: env('SMTP_HOST', 'localhost'),
+          port: envNum('SMTP_PORT', 587),
+          secure: envBool('SMTP_SECURE', false),
+          user: env('SMTP_USER') || undefined,
+          password: env('SMTP_PASSWORD') || undefined,
+          from: env('SMTP_FROM', 'noreply@example.com'),
+        }
+      : undefined,
   };
 
   return configSchema.parse(defaultConfig);

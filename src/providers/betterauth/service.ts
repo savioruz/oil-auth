@@ -1,8 +1,10 @@
 import type { Config } from '@config/config';
 import type { PostgresClient } from '@infras/postgres/client';
 import type { RedisClient } from '@infras/redis/client';
+import type { SmtpClient } from '@infras/smtp/client';
+import { loadTemplate } from '@infras/smtp/template';
 import { betterAuth } from 'better-auth';
-import { admin, bearer, jwt, openAPI } from 'better-auth/plugins';
+import { admin, bearer, jwt, openAPI, twoFactor } from 'better-auth/plugins';
 import { schema } from './schema/schema';
 
 export type Auth = ReturnType<typeof betterAuth>;
@@ -10,9 +12,44 @@ export type Auth = ReturnType<typeof betterAuth>;
 export class BetterAuthService {
   private readonly instance: Auth;
 
-  constructor(config: Config, postgresClient: PostgresClient, redisClient: RedisClient | null) {
+  constructor(
+    config: Config,
+    postgresClient: PostgresClient,
+    redisClient: RedisClient | null,
+    smtpClient: SmtpClient | null = null
+  ) {
     const isProd = config.app.env === 'production';
     const { session: sessionSchema, ...restSchema } = schema;
+
+    const twoFactorPlugin = config.twoFactor.enabled
+      ? twoFactor({
+          issuer: config.app.name,
+          ...(config.twoFactor.method.includes('otp') && smtpClient
+            ? {
+                otpOptions: {
+                  period: config.twoFactor.otpExpiresIn,
+                  async sendOTP({ user, otp }) {
+                    const expireIn = `${Math.round(config.twoFactor.otpExpiresIn / 60)} minutes`;
+                    try {
+                      await smtpClient.sendMail({
+                        to: user.email,
+                        subject: 'Your verification code',
+                        text: `Your verification code is: ${otp}`,
+                        html: await loadTemplate('two-factor-otp', {
+                          Name: user.name ?? user.email,
+                          Otp: otp,
+                          ExpireIn: expireIn,
+                        }),
+                      });
+                    } catch {
+                      // non-blocking
+                    }
+                  },
+                },
+              }
+            : {}),
+        })
+      : null;
 
     this.instance = betterAuth({
       baseURL: config.auth.baseUrl,
@@ -20,7 +57,26 @@ export class BetterAuthService {
       database: postgresClient.getPool(),
       emailAndPassword: {
         enabled: true,
-        requireEmailVerification: config.auth.requireEmailVerification ?? false,
+        requireEmailVerification: false,
+        resetPasswordTokenExpiresIn: config.auth.resetPasswordExpiresIn,
+        sendResetPassword: async ({ user, url }) => {
+          if (!smtpClient) return;
+          const expireIn = `${Math.round(config.auth.resetPasswordExpiresIn / 60)} minutes`;
+          try {
+            await smtpClient.sendMail({
+              to: user.email,
+              subject: 'Reset your password',
+              text: `Reset your password: ${url}`,
+              html: await loadTemplate('reset-password', {
+                Name: user.name ?? user.email,
+                ResetUrl: url,
+                ExpireIn: expireIn,
+              }),
+            });
+          } catch {
+            // non-blocking
+          }
+        },
       },
       trustedOrigins: config.auth.trustedOrigins,
       advanced: {
@@ -76,7 +132,35 @@ export class BetterAuthService {
             },
           },
         }),
+        ...(twoFactorPlugin ? [twoFactorPlugin] : []),
       ],
+      // signup OTP hook — runs independently of AUTH_2FA_ENABLED
+      databaseHooks: {
+        user: {
+          create: {
+            after: async (user) => {
+              if (!config.twoFactor.emailVerificationOtpEnabled) return;
+              if (!config.twoFactor.method.includes('otp')) return;
+              if (!smtpClient) return;
+              try {
+                // TODO: sending a real OTP here requires a session — consider using emailOTP plugin for signup verification
+                const expireIn = `${Math.round(config.twoFactor.otpExpiresIn / 60)} minutes`;
+                await smtpClient.sendMail({
+                  to: user.email,
+                  subject: 'Verify your email',
+                  text: 'Please verify your email to complete signup.',
+                  html: await loadTemplate('email-verification', {
+                    Name: user.name ?? user.email,
+                    ExpireIn: expireIn,
+                  }),
+                });
+              } catch {
+                // non-blocking
+              }
+            },
+          },
+        },
+      },
       ...(config.oauth.google && {
         socialProviders: {
           google: {
