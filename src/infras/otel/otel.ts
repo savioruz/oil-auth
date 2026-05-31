@@ -71,7 +71,6 @@ class ScopeImpl implements Scope {
 
 class OtelImpl implements Otel {
   private sdk: NodeSDK;
-  private tracer: ReturnType<typeof trace.getTracer>;
 
   constructor(config: Config, logger: Logger) {
     const protocol = config.otel.protocol || 'grpc';
@@ -113,17 +112,16 @@ class OtelImpl implements Otel {
 
     this.sdk.start();
     logger.info('OpenTelemetry initialized successfully');
-
-    this.tracer = trace.getTracer(config.app.name);
   }
 
-  newScope(_ctx: Context | undefined, _scopeName: string, spanName: string): [Context, Scope] {
+  newScope(_ctx: Context | undefined, scopeName: string, spanName: string): [Context, Scope] {
     const activeCtx = otelContext.active();
     const parentCtx =
       _ctx && typeof (_ctx as Context & { setValue: unknown }).setValue === 'function'
         ? _ctx
         : activeCtx;
-    const span = this.tracer.startSpan(spanName, undefined, parentCtx);
+    const tracer = trace.getTracer(scopeName);
+    const span = tracer.startSpan(spanName, undefined, parentCtx);
     const newCtx = trace.setSpan(parentCtx, span);
     return [newCtx, new ScopeImpl(span)];
   }

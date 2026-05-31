@@ -35,7 +35,8 @@ export const identityMiddleware = (identityService: IdentityService): Middleware
 
     if (token) {
       try {
-        c.identity = await identityService.verify(token);
+        const otelCtx = c.get('otelContext');
+        c.identity = await identityService.verify(token, otelCtx);
       } catch {
         c.identity = null;
       }

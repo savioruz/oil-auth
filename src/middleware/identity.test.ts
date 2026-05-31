@@ -45,7 +45,8 @@ describe('identityMiddleware', () => {
       headers: { Authorization: 'Bearer my-token' },
     });
 
-    expect(mockService.verify).toHaveBeenCalledWith('my-token');
+    expect(mockService.verify).toHaveBeenCalled();
+    expect((mockService.verify as ReturnType<typeof mock>).mock.calls[0][0]).toBe('my-token');
     const body = (await res.json()) as Record<string, any>;
     expect(body.identity?.id).toBe('user-123');
   });
@@ -57,7 +58,8 @@ describe('identityMiddleware', () => {
       headers: { Cookie: 'better-auth.session_token=cookie-token; other=value' },
     });
 
-    expect(mockService.verify).toHaveBeenCalledWith('cookie-token');
+    expect(mockService.verify).toHaveBeenCalled();
+    expect((mockService.verify as ReturnType<typeof mock>).mock.calls[0][0]).toBe('cookie-token');
     const body = (await res.json()) as Record<string, any>;
     expect(body.identity?.id).toBe('user-123');
   });
@@ -72,7 +74,8 @@ describe('identityMiddleware', () => {
       },
     });
 
-    expect(mockService.verify).toHaveBeenCalledWith('bearer-token');
+    expect(mockService.verify).toHaveBeenCalled();
+    expect((mockService.verify as ReturnType<typeof mock>).mock.calls[0][0]).toBe('bearer-token');
   });
 
   test('sets identity to null when no auth header or cookie', async () => {
@@ -130,5 +133,23 @@ describe('identityMiddleware', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as Record<string, any>;
     expect(body.reached).toBe(true);
+  });
+
+  test('passes otelContext from c.get to identityService.verify', async () => {
+    const fakeOtelCtx = { kind: 'otel-context' } as any;
+    const verifyMock = mock(() => Promise.resolve(null));
+    const serviceWithVerify = { verify: verifyMock } as any;
+
+    const app = new Hono();
+    app.use('*', async (c, next) => {
+      c.set('otelContext', fakeOtelCtx);
+      await next();
+    });
+    app.use('*', identityMiddleware(serviceWithVerify));
+    app.get('/test', (c) => c.json({}));
+
+    await app.request('/test', { headers: { Authorization: 'Bearer some-token' } });
+
+    expect(verifyMock).toHaveBeenCalledWith('some-token', fakeOtelCtx);
   });
 });

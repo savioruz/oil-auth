@@ -62,5 +62,24 @@ describe('IdentityService', () => {
       const result = await identityService.signOut('token');
       expect(result).toBeUndefined();
     });
+
+    test('sets identity.signout.success to true on success', async () => {
+      const { otel: mockOtel2, scope } = makeMockOtel();
+      const service = new IdentityService({ provider: mockProvider }, mockOtel2 as any);
+
+      await service.signOut('token');
+
+      expect(scope.setAttribute).toHaveBeenCalledWith('identity.signout.success', true);
+    });
+
+    test('sets identity.signout.success to false on error', async () => {
+      const { otel: mockOtel2, scope } = makeMockOtel();
+      mockProvider.signOut?.mockImplementation(() => Promise.reject(new Error('sign out failed')));
+      const service = new IdentityService({ provider: mockProvider }, mockOtel2 as any);
+
+      await expect(service.signOut('token')).rejects.toThrow('sign out failed');
+
+      expect(scope.setAttribute).toHaveBeenCalledWith('identity.signout.success', false);
+    });
   });
 });

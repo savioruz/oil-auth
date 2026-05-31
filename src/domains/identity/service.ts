@@ -1,5 +1,5 @@
 import type { Otel } from '@infras/otel/otel';
-import { ROOT_CONTEXT } from '@opentelemetry/api';
+import { type Context, ROOT_CONTEXT } from '@opentelemetry/api';
 import type { IdentityProvider } from './provider';
 import type { UserIdentity } from './types';
 
@@ -16,35 +16,37 @@ export class IdentityService {
     this.otel = otel;
   }
 
-  async verify(token: string): Promise<UserIdentity | null> {
-    const [_ctx, scope] = this.otel.newScope(ROOT_CONTEXT, 'identity', 'verify-token');
+  async verify(token: string, ctx?: Context): Promise<UserIdentity | null> {
+    const [_ctx, scope] = this.otel.newScope(ctx ?? ROOT_CONTEXT, 'identity', 'verify-token');
     scope.addEvent('verifying token');
 
     try {
       const identity = await this.provider.verify(token);
       scope.setAttribute('identity.found', !!identity);
-      scope.end();
       return identity;
     } catch (error) {
       scope.traceIfError(error as Error);
-      scope.end();
       throw error;
+    } finally {
+      scope.end();
     }
   }
 
-  async signOut(token: string): Promise<void> {
-    const [_ctx, scope] = this.otel.newScope(ROOT_CONTEXT, 'identity', 'sign-out');
+  async signOut(token: string, ctx?: Context): Promise<void> {
+    const [_ctx, scope] = this.otel.newScope(ctx ?? ROOT_CONTEXT, 'identity', 'sign-out');
     scope.addEvent('signing out');
 
     try {
       if (this.provider.signOut) {
         await this.provider.signOut(token);
       }
-      scope.end();
+      scope.setAttribute('identity.signout.success', true);
     } catch (error) {
+      scope.setAttribute('identity.signout.success', false);
       scope.traceIfError(error as Error);
-      scope.end();
       throw error;
+    } finally {
+      scope.end();
     }
   }
 }

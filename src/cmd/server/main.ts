@@ -21,12 +21,12 @@ async function main() {
 
   const betterAuthService = new BetterAuthService(config, postgresClient, redisClient, smtpClient);
   const betterAuth = betterAuthService.getAuth();
-  const betterAuthProvider = new BetterAuthProviderAdapter(betterAuth);
+  const betterAuthProvider = new BetterAuthProviderAdapter(betterAuth, logger);
 
   const identityService = new IdentityService({ provider: betterAuthProvider }, otel);
 
   const jwksRepository = new PostgresJwksRepository(postgresClient.getPool());
-  const tokenService = new TokenService(betterAuth, config, jwksRepository);
+  const tokenService = new TokenService(betterAuth, config, jwksRepository, otel);
 
   const httpServer = new HttpServer(
     config,
