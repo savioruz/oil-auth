@@ -3,41 +3,19 @@ import type { Otel } from '@infras/otel/otel';
 import { ROOT_CONTEXT } from '@opentelemetry/api';
 import type { Auth } from '@providers/betterauth/service';
 import { importJWK, SignJWT } from 'jose';
-import type { JwksRepository } from './jwks.repository';
-
-export class InvalidAudienceError extends Error {
-  constructor(product: string) {
-    super(`Unknown product: ${product}`);
-    this.name = 'InvalidAudienceError';
-  }
-}
-
-export class UnauthorizedError extends Error {
-  constructor(message = 'Invalid or expired session') {
-    super(message);
-    this.name = 'UnauthorizedError';
-  }
-}
-
-export class NoSigningKeyError extends Error {
-  constructor() {
-    super('No signing key available');
-    this.name = 'NoSigningKeyError';
-  }
-}
-
-export class SigningKeyImportError extends Error {
-  constructor() {
-    super('Failed to load signing key');
-    this.name = 'SigningKeyImportError';
-  }
-}
+import {
+  InvalidAudienceError,
+  NoSigningKeyError,
+  SigningKeyImportError,
+  UnauthorizedError,
+} from './errors';
+import type { Repository } from './repository';
 
 export class TokenService {
   constructor(
     private readonly auth: Auth,
     private readonly config: Config,
-    private readonly jwksRepository: JwksRepository,
+    private readonly tokenRepository: Repository,
     private readonly otel: Otel
   ) {}
 
@@ -64,7 +42,7 @@ export class TokenService {
       const { session, user } = sessionResult;
       const u = user as typeof user & { role?: 'admin' | 'user' };
 
-      const key = await this.jwksRepository.findActiveKey();
+      const key = await this.tokenRepository.findActiveKey();
       if (!key) {
         throw new NoSigningKeyError();
       }

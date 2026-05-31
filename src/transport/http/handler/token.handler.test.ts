@@ -4,7 +4,7 @@ import {
   NoSigningKeyError,
   SigningKeyImportError,
   UnauthorizedError,
-} from '@domains/token/token.service';
+} from '@domains/token/errors';
 import { Hono } from 'hono';
 import { createTokenHandler } from './token.handler';
 

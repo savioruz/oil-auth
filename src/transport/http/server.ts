@@ -1,6 +1,6 @@
 import type { Config } from '@config/config';
 import type { IdentityService } from '@domains/identity/service';
-import type { TokenService } from '@domains/token/token.service';
+import type { TokenService } from '@domains/token/service';
 import type { Logger } from '@infras/logger/logger';
 import type { Otel } from '@infras/otel/otel';
 import type { PostgresClient } from '@infras/postgres/client';

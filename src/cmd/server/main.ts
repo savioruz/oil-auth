@@ -1,7 +1,7 @@
 import { config } from '@config/config';
 import { IdentityService } from '@domains/identity/service';
-import { PostgresJwksRepository } from '@domains/token/jwks.postgres';
-import { TokenService } from '@domains/token/token.service';
+import { TokenRepository } from '@domains/token/repository';
+import { TokenService } from '@domains/token/service';
 import { createLogger } from '@infras/logger/logger';
 import { createOtel } from '@infras/otel/otel';
 import { createPostgresClient } from '@infras/postgres/client';
@@ -25,8 +25,8 @@ async function main() {
 
   const identityService = new IdentityService({ provider: betterAuthProvider }, otel);
 
-  const jwksRepository = new PostgresJwksRepository(postgresClient.getPool());
-  const tokenService = new TokenService(betterAuth, config, jwksRepository, otel);
+  const tokenRepository = new TokenRepository(postgresClient.getPool());
+  const tokenService = new TokenService(betterAuth, config, tokenRepository, otel);
 
   const httpServer = new HttpServer(
     config,

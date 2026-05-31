@@ -1,12 +1,20 @@
 import type { Pool } from 'pg';
-import type { JwksKey, JwksRepository } from './jwks.repository';
+
+export interface JwksKey {
+  kid: string;
+  privateKeyJson: string;
+}
+
+export interface Repository {
+  findActiveKey(): Promise<JwksKey | null>;
+}
 
 interface JwksRow {
   id: string;
   privateKey: string;
 }
 
-export class PostgresJwksRepository implements JwksRepository {
+export class TokenRepository implements Repository {
   constructor(private readonly pool: Pool) {}
 
   async findActiveKey(): Promise<JwksKey | null> {

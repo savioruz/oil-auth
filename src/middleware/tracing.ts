@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Otel } from '@infras/otel/otel';
 import { ROOT_CONTEXT } from '@opentelemetry/api';
 import type { MiddlewareHandler } from 'hono';
+import { getConnInfo } from 'hono/bun';
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -19,12 +20,21 @@ export const tracingMiddleware = (otel: Otel): MiddlewareHandler => {
 
     c.set('otelContext', ctx);
 
+    let clientIp = c.req.header('X-Forwarded-For') ?? c.req.header('X-Real-IP') ?? '';
+    if (!clientIp) {
+      try {
+        clientIp = getConnInfo(c).remote.address ?? '';
+      } catch {
+        clientIp = '';
+      }
+    }
+
     scope.setAttributes({
       'http.host': c.req.header('Host') ?? '',
       'http.method': method,
       'http.path': path,
       'http.request_id': requestId,
-      'http.source': c.req.header('X-Forwarded-For') ?? c.req.header('X-Real-IP') ?? '',
+      'http.source': clientIp,
       'http.user_agent': c.req.header('User-Agent') ?? '',
     });
 

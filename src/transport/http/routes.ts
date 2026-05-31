@@ -1,5 +1,5 @@
 import type { Config } from '@config/config';
-import type { TokenService } from '@domains/token/token.service';
+import type { TokenService } from '@domains/token/service';
 import type { Logger } from '@infras/logger/logger';
 import type { PostgresClient } from '@infras/postgres/client';
 import type { Auth } from '@providers/betterauth/service';

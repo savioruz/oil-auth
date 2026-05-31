@@ -2,9 +2,9 @@ import {
   InvalidAudienceError,
   NoSigningKeyError,
   SigningKeyImportError,
-  TokenService,
   UnauthorizedError,
-} from '@domains/token/token.service';
+} from '@domains/token/errors';
+import type { TokenService } from '@domains/token/service';
 import type { Handler } from 'hono';
 
 export function createTokenHandler(tokenService: TokenService): Handler {

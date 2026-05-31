@@ -3,14 +3,14 @@ import type { Config } from '@config/config';
 import { makeMockOtel } from '@infras/otel/otel.mock';
 import { makeMockAuth } from '@providers/betterauth/auth.mock';
 import { decodeJwt, decodeProtectedHeader } from 'jose';
-import type { JwksRepository } from './jwks.repository';
 import {
   InvalidAudienceError,
   NoSigningKeyError,
   SigningKeyImportError,
-  TokenService,
   UnauthorizedError,
-} from './token.service';
+} from './errors';
+import type { Repository } from './repository';
+import { TokenService } from './service';
 
 // Real extractable EdDSA private key for happy-path tests
 const TEST_PRIVATE_KEY_JWK = JSON.stringify({
@@ -34,7 +34,7 @@ const mockSession = {
 
 describe('TokenService', () => {
   let mockAuth: any;
-  let mockJwksRepository: JwksRepository;
+  let mockJwksRepository: Repository;
   let tokenService: TokenService;
   let mockOtel: ReturnType<typeof makeMockOtel>;
 
