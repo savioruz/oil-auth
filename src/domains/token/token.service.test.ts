@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { Config } from '@config/config';
+import { makeMockAuth } from '@providers/betterauth/auth.mock';
 import { decodeJwt, decodeProtectedHeader } from 'jose';
 import type { JwksRepository } from './jwks.repository';
 import {
@@ -36,11 +37,8 @@ describe('TokenService', () => {
   let tokenService: TokenService;
 
   beforeEach(() => {
-    mockAuth = {
-      api: {
-        getSession: mock(() => Promise.resolve(mockSession)),
-      },
-    };
+    mockAuth = makeMockAuth();
+    mockAuth.api.getSession.mockImplementation(() => Promise.resolve(mockSession));
 
     mockJwksRepository = {
       findActiveKey: mock(() =>

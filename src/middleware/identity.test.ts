@@ -1,36 +1,36 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import type { MockProvider } from '@domains/identity/provider.mock';
+import { makeMockProvider } from '@domains/identity/provider.mock';
 import { Hono } from 'hono';
 import { identityMiddleware } from './identity';
 
-const makeApp = (mockService: any) => {
+const makeApp = (mockService: MockProvider) => {
   const app = new Hono();
-  app.use('*', identityMiddleware(mockService));
+  app.use('*', identityMiddleware(mockService as any));
   app.get('/test', (c) => c.json({ identity: c.identity }));
   return app;
 };
 
 describe('identityMiddleware', () => {
-  let mockService: any;
+  let mockService: MockProvider;
 
   beforeEach(() => {
-    mockService = {
-      verify: mock(() =>
-        Promise.resolve({
-          id: 'user-123',
-          email: 'test@example.com',
-          emailVerified: true,
-          role: 'user',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-      ),
-      signOut: mock(() => Promise.resolve()),
-    };
+    mockService = makeMockProvider();
+    mockService.verify.mockImplementation(() =>
+      Promise.resolve({
+        id: 'user-123',
+        email: 'test@example.com',
+        emailVerified: true,
+        role: 'user',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+    );
   });
 
   test('attaches identityService to context', async () => {
     const app = new Hono();
-    app.use('*', identityMiddleware(mockService));
+    app.use('*', identityMiddleware(mockService as any));
     app.get('/test', (c) => c.json({ hasService: !!c.identityService }));
 
     const res = await app.request('/test');
@@ -123,7 +123,7 @@ describe('identityMiddleware', () => {
 
   test('still calls next() even when identity is null', async () => {
     const app = new Hono();
-    app.use('*', identityMiddleware(mockService));
+    app.use('*', identityMiddleware(mockService as any));
     app.get('/test', (c) => c.json({ reached: true }));
 
     const res = await app.request('/test');

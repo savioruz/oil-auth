@@ -1,18 +1,15 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
+import type { MockAuth } from '@providers/betterauth/auth.mock';
+import { makeMockAuth } from '@providers/betterauth/auth.mock';
 import { BetterAuthProviderAdapter } from './provider';
 
 describe('BetterAuthProviderAdapter', () => {
-  let mockAuth: any;
+  let mockAuth: MockAuth;
   let provider: BetterAuthProviderAdapter;
 
   beforeEach(() => {
-    mockAuth = {
-      api: {
-        getSession: mock(),
-        signOut: mock(),
-      },
-    };
-    provider = new BetterAuthProviderAdapter(mockAuth);
+    mockAuth = makeMockAuth();
+    provider = new BetterAuthProviderAdapter(mockAuth as any);
   });
 
   describe('verify()', () => {

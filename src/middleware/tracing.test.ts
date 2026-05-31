@@ -1,20 +1,7 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
+import { makeMockOtel } from '@infras/otel/otel.mock';
 import { Hono } from 'hono';
 import { tracingMiddleware } from './tracing';
-
-const makeMockOtel = () => {
-  const scope = {
-    setAttributes: mock(),
-    setAttribute: mock(),
-    addEvent: mock(),
-    end: mock(),
-    traceIfError: mock(),
-  };
-  return {
-    otel: { newScope: mock(() => [{}, scope]) },
-    scope,
-  };
-};
 
 describe('tracingMiddleware', () => {
   let mockOtel: ReturnType<typeof makeMockOtel>['otel'];

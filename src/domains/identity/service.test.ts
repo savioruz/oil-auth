@@ -1,38 +1,26 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import type { IdentityProvider } from './provider';
+import { beforeEach, describe, expect, test } from 'bun:test';
+import { makeMockProvider } from '@domains/identity/provider.mock';
+import { makeMockOtel } from '@infras/otel/otel.mock';
 import { IdentityService } from './service';
 
 describe('IdentityService', () => {
-  let mockProvider: IdentityProvider;
-  let mockOtel: any;
+  let mockProvider: ReturnType<typeof makeMockProvider>;
+  let mockOtel: ReturnType<typeof makeMockOtel>['otel'];
   let identityService: IdentityService;
 
   beforeEach(() => {
-    mockProvider = {
-      verify: mock(() =>
-        Promise.resolve({
-          id: 'user-123',
-          email: 'test@example.com',
-          emailVerified: true,
-          role: 'user' as const,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-      ),
-      signOut: mock(() => Promise.resolve()),
-    };
-
-    mockOtel = {
-      newScope: mock(() => {
-        const scope = {
-          addEvent: mock(),
-          setAttribute: mock(),
-          end: mock(),
-          traceIfError: mock(),
-        };
-        return [{}, scope];
-      }),
-    };
+    mockProvider = makeMockProvider();
+    mockProvider.verify.mockImplementation(() =>
+      Promise.resolve({
+        id: 'user-123',
+        email: 'test@example.com',
+        emailVerified: true,
+        role: 'user' as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+    );
+    ({ otel: mockOtel } = makeMockOtel());
 
     identityService = new IdentityService({ provider: mockProvider }, mockOtel);
   });
@@ -47,7 +35,7 @@ describe('IdentityService', () => {
     });
 
     test('should return null when provider returns null', async () => {
-      (mockProvider.verify as any).mockImplementation(() => Promise.resolve(null));
+      mockProvider.verify.mockImplementation(() => Promise.resolve(null));
 
       const result = await identityService.verify('invalid-token');
 
@@ -55,9 +43,7 @@ describe('IdentityService', () => {
     });
 
     test('should throw error when provider throws', async () => {
-      (mockProvider.verify as any).mockImplementation(() =>
-        Promise.reject(new Error('Verify failed'))
-      );
+      mockProvider.verify.mockImplementation(() => Promise.reject(new Error('Verify failed')));
 
       await expect(identityService.verify('token')).rejects.toThrow('Verify failed');
     });
@@ -71,7 +57,7 @@ describe('IdentityService', () => {
     });
 
     test('should not throw when provider signOut is not available', async () => {
-      mockProvider.signOut = undefined;
+      (mockProvider as any).signOut = undefined;
 
       const result = await identityService.signOut('token');
       expect(result).toBeUndefined();
