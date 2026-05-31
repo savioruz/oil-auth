@@ -56,7 +56,6 @@ export class TokenService {
       }
 
       const now = Math.floor(Date.now() / 1000);
-      const exp = now + 3 * 60 * 60;
 
       const jwt = await new SignJWT({
         email: u.email,
@@ -68,7 +67,7 @@ export class TokenService {
         .setSubject(u.id)
         .setAudience(product)
         .setIssuedAt(now)
-        .setExpirationTime(exp)
+        .setExpirationTime(`${this.config.auth.jwtExpiresIn}s`)
         .sign(privateKey);
 
       scope.setAttribute('token.issued', true);
