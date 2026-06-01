@@ -1,5 +1,6 @@
 import type { Auth } from '@providers/betterauth/service';
 import { Hono } from 'hono';
+import { config } from '@/config/config';
 
 export function createOpenAPIRouter(auth: Auth): Hono {
   const router = new Hono();
@@ -98,9 +99,11 @@ export function createOpenAPIRouter(auth: Auth): Hono {
     return c.html(`<!DOCTYPE html>
 <html>
 <head>
-  <title>Oil Auth - API Reference</title>
+  <title>${config.app.name} - API Reference</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="https://scalar.com/favicon.svg">
+  <link rel="icon alternate" href="https://scalar.com/favicon.png">
 </head>
 <body>
   <script
