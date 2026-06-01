@@ -7,7 +7,7 @@ else
   exit 1
 fi
 
-$NODE_ENGINE run lint:fix
+$NODE_ENGINE run lint
 $NODE_ENGINE run typecheck
 
 exit $?
