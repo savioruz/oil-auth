@@ -1,10 +1,11 @@
-import type { Auth } from '@providers/betterauth/service';
-import { Hono } from 'hono';
+import type { Auth } from "@providers/betterauth/service";
+import { Hono } from "hono";
+import { config } from "@/config/config";
 
 export function createOpenAPIRouter(auth: Auth): Hono {
   const router = new Hono();
 
-  router.get('/openapi.json', async (c) => {
+  router.get("/openapi.json", async (c) => {
     const api = auth.api as unknown as {
       generateOpenAPISchema: () => Promise<unknown>;
     };
@@ -14,74 +15,74 @@ export function createOpenAPIRouter(auth: Auth): Hono {
       paths?: Record<string, unknown>;
     };
     openApiSpec.paths ??= {};
-    delete openApiSpec.paths['/token'];
-    openApiSpec.paths['/token/{product}'] = {
+    delete openApiSpec.paths["/token"];
+    openApiSpec.paths["/token/{product}"] = {
       get: {
         summary: '/token/{product}',
         operationId: 'issueToken',
         tags: ['Jwt'],
         parameters: [
           {
-            name: 'product',
-            in: 'path',
+            name: "product",
+            in: "path",
             required: true,
-            description: 'The product audience for which the JWT is issued',
-            schema: { type: 'string' },
+            description: "The product audience for which the JWT is issued",
+            schema: { type: "string" },
           },
         ],
         security: [{ bearerAuth: [] }],
         responses: {
-          '200': {
-            description: 'JWT issued successfully',
+          "200": {
+            description: "JWT issued successfully",
             content: {
-              'application/json': {
+              "application/json": {
                 schema: {
-                  type: 'object',
+                  type: "object",
                   properties: {
-                    token: { type: 'string', description: 'Signed JWT' },
+                    token: { type: "string", description: "Signed JWT" },
                   },
-                  required: ['token'],
+                  required: ["token"],
                 },
               },
             },
           },
-          '400': {
-            description: 'Invalid audience',
+          "400": {
+            description: "Invalid audience",
             content: {
-              'application/json': {
+              "application/json": {
                 schema: {
-                  type: 'object',
+                  type: "object",
                   properties: {
-                    error: { type: 'string', example: 'invalid_audience' },
-                    message: { type: 'string' },
-                  },
-                },
-              },
-            },
-          },
-          '401': {
-            description: 'Unauthorized — no valid session provided',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    error: { type: 'string', example: 'unauthorized' },
-                    message: { type: 'string' },
+                    error: { type: "string", example: "invalid_audience" },
+                    message: { type: "string" },
                   },
                 },
               },
             },
           },
-          '500': {
-            description: 'Server error',
+          "401": {
+            description: "Unauthorized — no valid session provided",
             content: {
-              'application/json': {
+              "application/json": {
                 schema: {
-                  type: 'object',
+                  type: "object",
                   properties: {
-                    error: { type: 'string', example: 'server_error' },
-                    message: { type: 'string' },
+                    error: { type: "string", example: "unauthorized" },
+                    message: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Server error",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string", example: "server_error" },
+                    message: { type: "string" },
                   },
                 },
               },
@@ -94,13 +95,15 @@ export function createOpenAPIRouter(auth: Auth): Hono {
     return c.json(spec);
   });
 
-  router.get('/docs', (c) => {
+  router.get("/docs", (c) => {
     return c.html(`<!DOCTYPE html>
 <html>
 <head>
-  <title>Oil Auth - API Reference</title>
+  <title>${config.app.name} - API Reference</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="https://scalar.com/favicon.svg">
+  <link rel="icon alternate" href="https://scalar.com/favicon.png">
 </head>
 <body>
   <script
