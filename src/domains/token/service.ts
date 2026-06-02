@@ -44,7 +44,7 @@ export class TokenService {
       }
 
       const { session, user } = sessionResult;
-      const u = user as typeof user & { role?: 'admin' | 'user' };
+      const u = user as typeof user & { role?: 'admin' | 'user'; phoneNumber?: string };
 
       const key = await this.tokenRepository.findActiveKey();
       if (!key) {
@@ -65,6 +65,7 @@ export class TokenService {
         email: u.email,
         role: u.role ?? 'user',
         sid: session.id,
+        phoneNumber: u.phoneNumber,
       })
         .setProtectedHeader({ alg: 'EdDSA', kid: key.kid })
         .setIssuer(this.config.auth.baseUrl)
