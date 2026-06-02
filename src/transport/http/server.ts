@@ -56,6 +56,7 @@ export class HttpServer {
       betterAuth: this.betterAuth,
       postgresClient: this.postgresClient,
       logger: this.logger,
+      otel: this.otel,
     });
   }
 

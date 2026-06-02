@@ -19,7 +19,7 @@ export class BetterAuthService {
     smtpClient: SmtpClient | null = null
   ) {
     const isProd = config.app.env === 'production';
-    const { session: sessionSchema, ...restSchema } = schema;
+    const { session: sessionSchema, user: userSchema, ...restSchema } = schema;
 
     const twoFactorPlugin = config.twoFactor.enabled
       ? twoFactor({
@@ -127,6 +127,16 @@ export class BetterAuthService {
           },
         },
       },
+      user: {
+        ...userSchema,
+        additionalFields: {
+          phoneNumber: {
+            type: 'string',
+            required: false,
+            fieldName: 'phone_number',
+          },
+        },
+      },
       session: {
         ...sessionSchema,
         expiresIn: config.session.expiresIn,
@@ -151,11 +161,12 @@ export class BetterAuthService {
             issuer: config.auth.baseUrl,
             expirationTime: `${config.auth.jwtExpiresIn}s`,
             definePayload: ({ user }) => {
-              const u = user as typeof user & { role?: string };
+              const u = user as typeof user & { role?: string; phoneNumber?: string };
               return {
                 id: u.id,
                 email: u.email,
                 role: u.role ?? 'user',
+                phoneNumber: u.phoneNumber,
               };
             },
           },

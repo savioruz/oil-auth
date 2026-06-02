@@ -1,4 +1,4 @@
-create table "user" ("id" text not null primary key, "name" text not null, "email" text not null unique, "email_verified" boolean not null, "image" text, "role" text not null default 'user', "banned" boolean, "ban_reason" text, "ban_expires" timestamptz, "created_at" timestamptz default CURRENT_TIMESTAMP not null, "updated_at" timestamptz default CURRENT_TIMESTAMP not null);
+create table "user" ("id" text not null primary key, "name" text not null, "email" text not null unique, "email_verified" boolean not null, "image" text, "role" text not null default 'user', "banned" boolean, "ban_reason" text, "ban_expires" timestamptz, "phone_number" text, "created_at" timestamptz default CURRENT_TIMESTAMP not null, "updated_at" timestamptz default CURRENT_TIMESTAMP not null);
 
 create table "session" ("id" text not null primary key, "expires_at" timestamptz not null, "token" text not null unique, "created_at" timestamptz default CURRENT_TIMESTAMP not null, "updated_at" timestamptz not null, "ip_address" text, "user_agent" text, "impersonated_by" text, "user_id" text not null references "user" ("id") on delete cascade);
 

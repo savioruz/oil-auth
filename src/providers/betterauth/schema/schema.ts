@@ -16,6 +16,7 @@ type UserFields = {
   banned?: string;
   banReason?: string;
   banExpires?: string;
+  phoneNumber?: string;
   createdAt: string;
   updatedAt: string;
 };
