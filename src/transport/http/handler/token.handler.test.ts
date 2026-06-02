@@ -37,9 +37,11 @@ describe('createTokenHandler', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as Record<string, any>;
     expect(body.token).toBe('signed.jwt.token');
-    expect(mockTokenService.issueToken).toHaveBeenCalledWith('productA', {
-      authorization: 'Bearer my-session-token',
-    });
+    expect(mockTokenService.issueToken).toHaveBeenCalledWith(
+      'productA',
+      { authorization: 'Bearer my-session-token' },
+      undefined
+    );
   });
 
   test('returns 200 with token on success via Cookie header', async () => {
@@ -53,9 +55,11 @@ describe('createTokenHandler', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as Record<string, any>;
     expect(body.token).toBe('signed.jwt.token');
-    expect(mockTokenService.issueToken).toHaveBeenCalledWith('productB', {
-      cookie: 'better-auth.session_token=cookie-token',
-    });
+    expect(mockTokenService.issueToken).toHaveBeenCalledWith(
+      'productB',
+      { cookie: 'better-auth.session_token=cookie-token' },
+      undefined
+    );
   });
 
   test('returns 401 when no auth header or cookie provided', async () => {
@@ -153,9 +157,11 @@ describe('createTokenHandler', () => {
       },
     });
 
-    expect(mockTokenService.issueToken).toHaveBeenCalledWith('productA', {
-      authorization: 'Bearer bearer-token',
-    });
+    expect(mockTokenService.issueToken).toHaveBeenCalledWith(
+      'productA',
+      { authorization: 'Bearer bearer-token' },
+      undefined
+    );
   });
 
   test('returns 400 when product is missing', async () => {

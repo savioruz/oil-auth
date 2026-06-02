@@ -10,7 +10,7 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 
 export interface Otel {
-  newScope(ctx: Context, scopeName: string, spanName: string): [Context, Scope];
+  newScope(ctx: Context | undefined, scopeName: string, spanName: string): [Context, Scope];
   shutdown(): Promise<void>;
 }
 

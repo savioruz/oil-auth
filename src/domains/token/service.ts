@@ -1,6 +1,6 @@
 import type { Config } from '@config/config';
 import type { Otel } from '@infras/otel/otel';
-import { ROOT_CONTEXT } from '@opentelemetry/api';
+import { type Context, ROOT_CONTEXT } from '@opentelemetry/api';
 import type { Auth } from '@providers/betterauth/service';
 import { importJWK, SignJWT } from 'jose';
 import {
@@ -19,8 +19,12 @@ export class TokenService {
     private readonly otel: Otel
   ) {}
 
-  async issueToken(product: string, headers: Record<string, string>): Promise<string> {
-    const [_ctx, scope] = this.otel.newScope(ROOT_CONTEXT, 'token', 'issue-token');
+  async issueToken(
+    product: string,
+    headers: Record<string, string>,
+    ctx?: Context
+  ): Promise<string> {
+    const [_ctx, scope] = this.otel.newScope(ctx ?? ROOT_CONTEXT, 'token', 'issue-token');
     scope.setAttribute('token.product', product);
 
     try {

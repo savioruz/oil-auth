@@ -17,7 +17,7 @@ async function main() {
   const otel = createOtel(config, logger);
   const postgresClient = createPostgresClient(config, logger);
   const redisClient = createRedisClient(config, logger);
-  const smtpClient = createSmtpClient(config, logger);
+  const smtpClient = createSmtpClient(config, otel, logger);
 
   const betterAuthService = new BetterAuthService(config, postgresClient, redisClient, smtpClient);
   const betterAuth = betterAuthService.getAuth();

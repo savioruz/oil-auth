@@ -24,7 +24,8 @@ export function createTokenHandler(tokenService: TokenService): Handler {
     }
 
     try {
-      const token = await tokenService.issueToken(product, headers);
+      const otelCtx = c.get('otelContext');
+      const token = await tokenService.issueToken(product, headers, otelCtx);
       return c.json({ token });
     } catch (err) {
       if (err instanceof InvalidAudienceError) {
