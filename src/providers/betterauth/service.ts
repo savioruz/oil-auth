@@ -134,6 +134,40 @@ export class BetterAuthService {
             type: 'string',
             required: false,
             fieldName: 'phone_number',
+            validator: {
+              input: {
+                '~standard': {
+                  version: 1,
+                  vendor: 'oil-auth',
+                  validate: (value: unknown) => {
+                    if (value === undefined || value === null || value === '') {
+                      return { value: '' };
+                    }
+                    if (typeof value !== 'string') {
+                      return {
+                        issues: [{ message: 'Phone number must be a string' }],
+                      };
+                    }
+                    const digits = value.replace(/\D/g, '');
+                    if (digits.length < 7 || digits.length > 15) {
+                      return {
+                        issues: [{ message: 'Invalid phone number' }],
+                      };
+                    }
+                    if (!/^[\d\s+\-().]+$/.test(value)) {
+                      return {
+                        issues: [
+                          {
+                            message: 'Invalid phone number',
+                          },
+                        ],
+                      };
+                    }
+                    return { value };
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -161,7 +195,10 @@ export class BetterAuthService {
             issuer: config.auth.baseUrl,
             expirationTime: `${config.auth.jwtExpiresIn}s`,
             definePayload: ({ user }) => {
-              const u = user as typeof user & { role?: string; phoneNumber?: string };
+              const u = user as typeof user & {
+                role?: string;
+                phoneNumber?: string;
+              };
               return {
                 id: u.id,
                 email: u.email,
