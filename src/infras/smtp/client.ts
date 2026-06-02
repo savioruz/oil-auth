@@ -17,9 +17,7 @@ export class SmtpClient {
     private config: NonNullable<Config['smtp']>,
     private logger?: Logger
   ) {
-    this.from = config.fromName
-      ? `${config.fromName} <${config.from}>`
-      : config.from;
+    this.from = config.fromName ? `${config.fromName} <${config.from}>` : config.from;
     this.transporter = nodemailer.createTransport({
       host: config.host,
       port: config.port,
