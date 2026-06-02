@@ -51,6 +51,7 @@ const configSchema = z.object({
 
     trustedOrigins: z.array(z.string()).default([]),
     allowedAudiences: z.array(z.string()).default([]),
+    requireEmailVerification: z.boolean().default(false),
     resetPasswordExpiresIn: z.number().default(3600),
     jwtExpiresIn: z.number().default(3600),
   }),
@@ -66,9 +67,14 @@ const configSchema = z.object({
   twoFactor: z.object({
     enabled: z.boolean().default(false),
     method: z.array(z.enum(['totp', 'otp'])).default(['totp']),
-    emailVerificationOtpEnabled: z.boolean().default(false),
     otpExpiresIn: z.number().default(300),
   }),
+  emailVerification: z
+    .object({
+      sendOnSignUp: z.boolean().default(false),
+      expiresIn: z.number().default(3600),
+    })
+    .optional(),
   smtp: z
     .object({
       host: z.string().default('localhost'),
@@ -77,6 +83,7 @@ const configSchema = z.object({
       user: z.string().optional(),
       password: z.string().optional(),
       from: z.string().default('noreply@example.com'),
+      fromName: z.string().optional(),
     })
     .optional(),
 });
@@ -132,6 +139,7 @@ export function loadConfig(): Config {
       secretKey: env('AUTH_SECRET_KEY', 'your_secret_key'),
       trustedOrigins: envArray('AUTH_TRUSTED_ORIGINS'),
       allowedAudiences: envArray('AUTH_ALLOWED_AUDIENCES'),
+      requireEmailVerification: envBool('AUTH_REQUIRE_EMAIL_VERIFICATION', false),
       resetPasswordExpiresIn: envNum('AUTH_RESET_PASSWORD_EXPIRES_IN', 3600),
       jwtExpiresIn: envNum('AUTH_JWT_EXPIRES_IN', 3600),
     },
@@ -152,9 +160,14 @@ export function loadConfig(): Config {
         );
         return methods.length > 0 ? methods : ['totp'];
       })(),
-      emailVerificationOtpEnabled: envBool('AUTH_EMAIL_VERIFICATION_OTP_ENABLED', false),
       otpExpiresIn: envNum('AUTH_2FA_OTP_EXPIRES_IN', 300),
     },
+    emailVerification: env('AUTH_VERIFICATION_SEND_ON_SIGNUP')
+      ? {
+          sendOnSignUp: envBool('AUTH_VERIFICATION_SEND_ON_SIGNUP', false),
+          expiresIn: envNum('AUTH_VERIFICATION_EXPIRES_IN', 3600),
+        }
+      : undefined,
     smtp: env('SMTP_HOST')
       ? {
           host: env('SMTP_HOST', 'localhost'),
@@ -163,6 +176,7 @@ export function loadConfig(): Config {
           user: env('SMTP_USER') || undefined,
           password: env('SMTP_PASSWORD') || undefined,
           from: env('SMTP_FROM', 'noreply@example.com'),
+          fromName: env('SMTP_FROM_NAME') || undefined,
         }
       : undefined,
   };

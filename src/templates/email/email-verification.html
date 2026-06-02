@@ -14,8 +14,11 @@
             <td>
               <h2 style="margin: 0 0 16px;">Verify your email</h2>
               <p style="color: #555;">Hi {{.Name}},</p>
-              <p style="color: #555;">Thank you for signing up. Please verify your email address to complete your registration.</p>
-              <p style="color: #555;">Your verification code will expire in <strong>{{.ExpireIn}}</strong>.</p>
+              <p style="color: #555;">Thank you for signing up. Please verify your email address by clicking the button below. This link expires in <strong>{{.ExpireIn}}</strong>.</p>
+              <div style="text-align: center; padding: 24px 0;">
+                <a href="{{.VerifyUrl}}" style="background: #111; color: #fff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold;">Verify Email</a>
+              </div>
+              <p style="color: #555; font-size: 13px;">Or copy this link: <a href="{{.VerifyUrl}}" style="color: #555;">{{.VerifyUrl}}</a></p>
               <p style="color: #999; font-size: 12px;">If you did not create an account, you can safely ignore this email.</p>
             </td>
           </tr>

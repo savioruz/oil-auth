@@ -50,6 +50,7 @@ export function makeMockConfig(): Config {
       secretKey: 'test-secret-key',
       trustedOrigins: ['http://localhost:3000'],
       allowedAudiences: [],
+      requireEmailVerification: false,
       resetPasswordExpiresIn: 3600,
       jwtExpiresIn: 3600,
     },
@@ -59,9 +60,9 @@ export function makeMockConfig(): Config {
     twoFactor: {
       enabled: false,
       method: ['totp'],
-      emailVerificationOtpEnabled: false,
       otpExpiresIn: 300,
     },
+    emailVerification: undefined,
     smtp: undefined,
   };
 }

@@ -57,7 +57,7 @@ export class BetterAuthService {
       database: postgresClient.getPool(),
       emailAndPassword: {
         enabled: true,
-        requireEmailVerification: false,
+        requireEmailVerification: config.auth.requireEmailVerification,
         resetPasswordTokenExpiresIn: config.auth.resetPasswordExpiresIn,
         sendResetPassword: async ({ user, url }) => {
           if (!smtpClient) return;
@@ -78,6 +78,34 @@ export class BetterAuthService {
           }
         },
       },
+      ...(config.emailVerification
+        ? {
+            emailVerification: {
+              sendOnSignUp: config.emailVerification.sendOnSignUp,
+              expiresIn: config.emailVerification.expiresIn,
+              sendVerificationEmail: async ({ user, url }) => {
+                if (!smtpClient) return;
+                const expireIn = `${Math.round(
+                  (config.emailVerification?.expiresIn ?? 3600) / 60
+                )} minutes`;
+                try {
+                  await smtpClient.sendMail({
+                    to: user.email,
+                    subject: 'Verify your email',
+                    text: `Verify your email: ${url}`,
+                    html: await loadTemplate('email-verification', {
+                      Name: user.name ?? user.email,
+                      VerifyUrl: url,
+                      ExpireIn: expireIn,
+                    }),
+                  });
+                } catch {
+                  // non-blocking
+                }
+              },
+            },
+          }
+        : {}),
       trustedOrigins: config.auth.trustedOrigins,
       advanced: {
         useSecureCookies: isProd,
@@ -134,33 +162,6 @@ export class BetterAuthService {
         }),
         ...(twoFactorPlugin ? [twoFactorPlugin] : []),
       ],
-      // signup OTP hook — runs independently of AUTH_2FA_ENABLED
-      databaseHooks: {
-        user: {
-          create: {
-            after: async (user) => {
-              if (!config.twoFactor.emailVerificationOtpEnabled) return;
-              if (!config.twoFactor.method.includes('otp')) return;
-              if (!smtpClient) return;
-              try {
-                // TODO: sending a real OTP here requires a session — consider using emailOTP plugin for signup verification
-                const expireIn = `${Math.round(config.twoFactor.otpExpiresIn / 60)} minutes`;
-                await smtpClient.sendMail({
-                  to: user.email,
-                  subject: 'Verify your email',
-                  text: 'Please verify your email to complete signup.',
-                  html: await loadTemplate('email-verification', {
-                    Name: user.name ?? user.email,
-                    ExpireIn: expireIn,
-                  }),
-                });
-              } catch {
-                // non-blocking
-              }
-            },
-          },
-        },
-      },
       ...(config.oauth.google && {
         socialProviders: {
           google: {
