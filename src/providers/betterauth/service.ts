@@ -1,11 +1,11 @@
-import type { Config } from '@config/config';
-import type { PostgresClient } from '@infras/postgres/client';
-import type { RedisClient } from '@infras/redis/client';
-import type { SmtpClient } from '@infras/smtp/client';
-import { loadTemplate } from '@infras/smtp/template';
-import { betterAuth } from 'better-auth';
-import { admin, bearer, jwt, openAPI, twoFactor } from 'better-auth/plugins';
-import { schema } from './schema/schema';
+import type { Config } from "@config/config";
+import type { PostgresClient } from "@infras/postgres/client";
+import type { RedisClient } from "@infras/redis/client";
+import type { SmtpClient } from "@infras/smtp/client";
+import { loadTemplate } from "@infras/smtp/template";
+import { betterAuth } from "better-auth";
+import { admin, bearer, jwt, openAPI, twoFactor } from "better-auth/plugins";
+import { schema } from "./schema/schema";
 
 export type Auth = ReturnType<typeof betterAuth>;
 
@@ -16,15 +16,15 @@ export class BetterAuthService {
     config: Config,
     postgresClient: PostgresClient,
     redisClient: RedisClient | null,
-    smtpClient: SmtpClient | null = null
+    smtpClient: SmtpClient | null = null,
   ) {
-    const isProd = config.app.env === 'production';
+    const isProd = config.app.env === "production";
     const { session: sessionSchema, user: userSchema, ...restSchema } = schema;
 
     const twoFactorPlugin = config.twoFactor.enabled
       ? twoFactor({
           issuer: config.app.name,
-          ...(config.twoFactor.method.includes('otp') && smtpClient
+          ...(config.twoFactor.method.includes("otp") && smtpClient
             ? {
                 otpOptions: {
                   period: config.twoFactor.otpExpiresIn,
@@ -33,9 +33,9 @@ export class BetterAuthService {
                     try {
                       await smtpClient.sendMail({
                         to: user.email,
-                        subject: 'Your verification code',
+                        subject: "Your verification code",
                         text: `Your verification code is: ${otp}`,
-                        html: await loadTemplate('two-factor-otp', {
+                        html: await loadTemplate("two-factor-otp", {
                           Name: user.name ?? user.email,
                           Otp: otp,
                           ExpireIn: expireIn,
@@ -65,9 +65,9 @@ export class BetterAuthService {
           try {
             await smtpClient.sendMail({
               to: user.email,
-              subject: 'Reset your password',
+              subject: "Reset your password",
               text: `Reset your password: ${url}`,
-              html: await loadTemplate('reset-password', {
+              html: await loadTemplate("reset-password", {
                 Name: user.name ?? user.email,
                 ResetUrl: url,
                 ExpireIn: expireIn,
@@ -86,14 +86,14 @@ export class BetterAuthService {
               sendVerificationEmail: async ({ user, url }) => {
                 if (!smtpClient) return;
                 const expireIn = `${Math.round(
-                  (config.emailVerification?.expiresIn ?? 3600) / 60
+                  (config.emailVerification?.expiresIn ?? 3600) / 60,
                 )} minutes`;
                 try {
                   await smtpClient.sendMail({
                     to: user.email,
-                    subject: 'Verify your email',
+                    subject: "Verify your email",
                     text: `Verify your email: ${url}`,
-                    html: await loadTemplate('email-verification', {
+                    html: await loadTemplate("email-verification", {
                       Name: user.name ?? user.email,
                       VerifyUrl: url,
                       ExpireIn: expireIn,
@@ -114,15 +114,15 @@ export class BetterAuthService {
             attributes: {
               httpOnly: true,
               secure: isProd,
-              sameSite: 'none',
-              path: '/',
+              sameSite: "none",
+              path: "/",
             },
           },
           session_data: {
             attributes: {
               secure: isProd,
-              sameSite: 'none',
-              path: '/',
+              sameSite: "none",
+              path: "/",
             },
           },
         },
@@ -131,9 +131,43 @@ export class BetterAuthService {
         ...userSchema,
         additionalFields: {
           phoneNumber: {
-            type: 'string',
+            type: "string",
             required: false,
-            fieldName: 'phone_number',
+            fieldName: "phone_number",
+            validator: {
+              input: {
+                "~standard": {
+                  version: 1,
+                  vendor: "oil-auth",
+                  validate: (value: unknown) => {
+                    if (value === undefined || value === null || value === "") {
+                      return { value: "" };
+                    }
+                    if (typeof value !== "string") {
+                      return {
+                        issues: [{ message: "Phone number must be a string" }],
+                      };
+                    }
+                    const digits = value.replace(/\D/g, "");
+                    if (digits.length < 7 || digits.length > 15) {
+                      return {
+                        issues: [{ message: "Invalid phone number" }],
+                      };
+                    }
+                    if (!/^[\d\s+\-().]+$/.test(value)) {
+                      return {
+                        issues: [
+                          {
+                            message: "Invalid phone number",
+                          },
+                        ],
+                      };
+                    }
+                    return { value };
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -161,11 +195,14 @@ export class BetterAuthService {
             issuer: config.auth.baseUrl,
             expirationTime: `${config.auth.jwtExpiresIn}s`,
             definePayload: ({ user }) => {
-              const u = user as typeof user & { role?: string; phoneNumber?: string };
+              const u = user as typeof user & {
+                role?: string;
+                phoneNumber?: string;
+              };
               return {
                 id: u.id,
                 email: u.email,
-                role: u.role ?? 'user',
+                role: u.role ?? "user",
                 phoneNumber: u.phoneNumber,
               };
             },
