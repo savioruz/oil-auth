@@ -15,6 +15,31 @@ export function createOpenAPIRouter(auth: Auth): Hono {
       paths?: Record<string, unknown>;
     };
     openApiSpec.paths ??= {};
+
+    // Add phoneNumber to sign-up request body
+    for (const path of Object.keys(openApiSpec.paths)) {
+      if (path.includes('sign-up/email')) {
+        const endpoint = (openApiSpec.paths[path] as Record<string, unknown>)?.post as Record<
+          string,
+          unknown
+        >;
+        const props = (endpoint?.requestBody as Record<string, unknown>)?.content as Record<
+          string,
+          unknown
+        >;
+        const schema = (props?.['application/json'] as Record<string, unknown>)?.schema as Record<
+          string,
+          unknown
+        >;
+        if (schema?.properties) {
+          (schema.properties as Record<string, unknown>).phoneNumber = {
+            type: 'string',
+            description: 'Optional phone number for the user',
+          };
+        }
+      }
+    }
+
     delete openApiSpec.paths['/token'];
     openApiSpec.paths['/token/{product}'] = {
       get: {
