@@ -187,4 +187,16 @@ describe('BetterAuthService', () => {
     const plugins = (service.getAuth().options as any).plugins;
     expect(plugins.length).toBeGreaterThanOrEqual(4);
   });
+
+  test('should expose hooks.after for callbackURL observability', () => {
+    service = new BetterAuthService(
+      mockConfig as any,
+      mockPostgresClient as any,
+      mockRedisClient as any
+    );
+
+    const hooks = (service.getAuth().options as any).hooks;
+    expect(hooks).toBeDefined();
+    expect(typeof hooks.after).toBe('function');
+  });
 });

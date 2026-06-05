@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { emailVerificationConfigWarning } from './config';
+import { makeMockConfig } from './config.mock';
 
 describe('Config', () => {
   test('should have valid app config', () => {
@@ -63,5 +65,43 @@ describe('Config', () => {
 
     delete process.env.OAUTH_GOOGLE_CLIENT_ID;
     delete process.env.OAUTH_GOOGLE_CLIENT_SECRET;
+  });
+});
+
+describe('emailVerificationConfigWarning', () => {
+  const baseMock = makeMockConfig();
+
+  test('returns null when requireEmailVerification is false', () => {
+    const cfg = { ...baseMock, auth: { ...baseMock.auth, requireEmailVerification: false } };
+    expect(emailVerificationConfigWarning(cfg)).toBeNull();
+  });
+
+  test('returns null when requireEmailVerification is true and sendOnSignUp is true', () => {
+    const cfg = {
+      ...baseMock,
+      auth: { ...baseMock.auth, requireEmailVerification: true },
+      emailVerification: { sendOnSignUp: true, expiresIn: 3600 },
+    };
+    expect(emailVerificationConfigWarning(cfg)).toBeNull();
+  });
+
+  test('returns warning when requireEmailVerification is true and emailVerification is undefined', () => {
+    const cfg = {
+      ...baseMock,
+      auth: { ...baseMock.auth, requireEmailVerification: true },
+      emailVerification: undefined,
+    };
+    expect(emailVerificationConfigWarning(cfg)).not.toBeNull();
+    expect(emailVerificationConfigWarning(cfg)).toContain('AUTH_REQUIRE_EMAIL_VERIFICATION');
+  });
+
+  test('returns warning when requireEmailVerification is true and sendOnSignUp is false', () => {
+    const cfg = {
+      ...baseMock,
+      auth: { ...baseMock.auth, requireEmailVerification: true },
+      emailVerification: { sendOnSignUp: false, expiresIn: 3600 },
+    };
+    expect(emailVerificationConfigWarning(cfg)).not.toBeNull();
+    expect(emailVerificationConfigWarning(cfg)).toContain('AUTH_REQUIRE_EMAIL_VERIFICATION');
   });
 });

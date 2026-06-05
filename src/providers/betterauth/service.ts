@@ -1,10 +1,13 @@
 import type { Config } from '@config/config';
+import type { Logger } from '@infras/logger/logger';
 import type { PostgresClient } from '@infras/postgres/client';
 import type { RedisClient } from '@infras/redis/client';
 import type { SmtpClient } from '@infras/smtp/client';
 import { loadTemplate } from '@infras/smtp/template';
 import { betterAuth } from 'better-auth';
 import { admin, bearer, jwt, openAPI, twoFactor } from 'better-auth/plugins';
+import { rewriteCallbackUrl } from './callback-url';
+import { createAuthHooks } from './hooks';
 import { schema } from './schema/schema';
 
 export type Auth = ReturnType<typeof betterAuth>;
@@ -16,7 +19,8 @@ export class BetterAuthService {
     config: Config,
     postgresClient: PostgresClient,
     redisClient: RedisClient | null,
-    smtpClient: SmtpClient | null = null
+    smtpClient: SmtpClient | null = null,
+    private readonly logger?: Logger
   ) {
     const isProd = config.app.env === 'production';
     const { session: sessionSchema, user: userSchema, ...restSchema } = schema;
@@ -88,14 +92,25 @@ export class BetterAuthService {
                 const expireIn = `${Math.round(
                   (config.emailVerification?.expiresIn ?? 3600) / 60
                 )} minutes`;
+                const {
+                  url: finalUrl,
+                  rewritten,
+                  reason,
+                } = rewriteCallbackUrl(url, config.auth.verifyEmailCallbackUrl);
+                if (rewritten) {
+                  this.logger?.info(
+                    { user: user.email, reason, target: finalUrl },
+                    'verify email callbackURL rewritten'
+                  );
+                }
                 try {
                   await smtpClient.sendMail({
                     to: user.email,
                     subject: 'Verify your email',
-                    text: `Verify your email: ${url}`,
+                    text: `Verify your email: ${finalUrl}`,
                     html: await loadTemplate('email-verification', {
                       Name: user.name ?? user.email,
-                      VerifyUrl: url,
+                      VerifyUrl: finalUrl,
                       ExpireIn: expireIn,
                     }),
                   });
@@ -210,6 +225,7 @@ export class BetterAuthService {
         }),
         ...(twoFactorPlugin ? [twoFactorPlugin] : []),
       ],
+      hooks: createAuthHooks(config, this.logger),
       ...(config.oauth.google && {
         socialProviders: {
           google: {
