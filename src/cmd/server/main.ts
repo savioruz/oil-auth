@@ -1,4 +1,4 @@
-import { config } from '@config/config';
+import { config, emailVerificationConfigWarning } from '@config/config';
 import { IdentityService } from '@domains/identity/service';
 import { TokenRepository } from '@domains/token/repository';
 import { TokenService } from '@domains/token/service';
@@ -14,12 +14,20 @@ import { serve } from 'bun';
 
 async function main() {
   const logger = createLogger(config);
+  const verifyWarning = emailVerificationConfigWarning(config);
+  if (verifyWarning) logger.warn(verifyWarning);
   const otel = createOtel(config, logger);
   const postgresClient = createPostgresClient(config, logger);
   const redisClient = createRedisClient(config, logger);
   const smtpClient = createSmtpClient(config, otel, logger);
 
-  const betterAuthService = new BetterAuthService(config, postgresClient, redisClient, smtpClient);
+  const betterAuthService = new BetterAuthService(
+    config,
+    postgresClient,
+    redisClient,
+    smtpClient,
+    logger
+  );
   const betterAuth = betterAuthService.getAuth();
   const betterAuthProvider = new BetterAuthProviderAdapter(betterAuth, logger);
 

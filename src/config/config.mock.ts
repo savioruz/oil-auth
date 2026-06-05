@@ -53,6 +53,7 @@ export function makeMockConfig(): Config {
       requireEmailVerification: false,
       resetPasswordExpiresIn: 3600,
       jwtExpiresIn: 3600,
+      verifyEmailCallbackUrl: undefined,
     },
     oauth: {
       google: null,

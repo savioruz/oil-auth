@@ -54,6 +54,7 @@ const configSchema = z.object({
     requireEmailVerification: z.boolean().default(false),
     resetPasswordExpiresIn: z.number().default(3600),
     jwtExpiresIn: z.number().default(3600),
+    verifyEmailCallbackUrl: z.string().url().optional(),
   }),
   oauth: z.object({
     google: z
@@ -142,6 +143,7 @@ export function loadConfig(): Config {
       requireEmailVerification: envBool('AUTH_REQUIRE_EMAIL_VERIFICATION', false),
       resetPasswordExpiresIn: envNum('AUTH_RESET_PASSWORD_EXPIRES_IN', 3600),
       jwtExpiresIn: envNum('AUTH_JWT_EXPIRES_IN', 3600),
+      verifyEmailCallbackUrl: env('AUTH_VERIFY_EMAIL_CALLBACK_URL') || undefined,
     },
     oauth: {
       google:
@@ -182,6 +184,17 @@ export function loadConfig(): Config {
   };
 
   return configSchema.parse(defaultConfig);
+}
+
+export function emailVerificationConfigWarning(config: Config): string | null {
+  if (config.auth.requireEmailVerification && !config.emailVerification?.sendOnSignUp) {
+    return (
+      'AUTH_REQUIRE_EMAIL_VERIFICATION=true but email verification is not being sent. ' +
+      'Set AUTH_VERIFICATION_SEND_ON_SIGNUP=true to auto-send on sign-up, or have your client ' +
+      'call POST /api/auth/send-verification-email after sign-up with a full callbackURL.'
+    );
+  }
+  return null;
 }
 
 export const config = loadConfig();
