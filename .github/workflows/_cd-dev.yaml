@@ -1,0 +1,168 @@
+name: CD DEV (reusable)
+
+# Reusable DEV deploy body. Invoked by cd-dev.yaml on ubuntu-latest first, then re-invoked
+# on self-hosted only if the first attempt fails. The runner is supplied by the caller.
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: Runner label to execute on (e.g. ubuntu-latest or self-hosted).
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  deploy-dev:
+    name: Build & Deploy DEV
+    runs-on: ${{ inputs.runner }}
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        id: image
+        run: echo "name=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push DEV image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:dev
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:dev-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update Dokploy Environment
+        run: |
+          set +x
+
+          COMPOSE_DATA=$(curl -s -X GET "${{ secrets.DOKPLOY_BASE_URL }}/api/compose.one?composeId=${{ secrets.DOKPLOY_COMPOSE_ID }}" \
+            -H 'accept: application/json' \
+            -H 'x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}')
+
+          EXISTING_ENV=$(echo "$COMPOSE_DATA" | jq -r '.env // ""')
+
+          UPDATED_ENV=$(echo "$EXISTING_ENV" | awk '!/^GIT_SHA=/ && !/^IMAGE_TAG=/' | awk 'NF')
+
+          if [ -n "$UPDATED_ENV" ]; then
+            UPDATED_ENV="${UPDATED_ENV}"$'\n'"GIT_SHA=${{ github.sha }}"
+            UPDATED_ENV="${UPDATED_ENV}"$'\n'"IMAGE_TAG=dev-${{ github.sha }}"
+          else
+            UPDATED_ENV="GIT_SHA=${{ github.sha }}"$'\n'"IMAGE_TAG=dev-${{ github.sha }}"
+          fi
+
+          # Update compose with the new env
+          PAYLOAD=$(jq -n \
+            --arg composeId "${{ secrets.DOKPLOY_COMPOSE_ID }}" \
+            --arg env "$UPDATED_ENV" \
+            '{composeId: $composeId, env: $env}')
+
+          HTTP_STATUS=$(curl -X POST ${{ secrets.DOKPLOY_BASE_URL }}/api/compose.update \
+            -H 'accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -H 'x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}' \
+            -d "$PAYLOAD" \
+            -w "%{http_code}" \
+            -o /tmp/dokploy_env_response.json \
+            -s)
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Error: Failed to update Dokploy environment (HTTP $HTTP_STATUS)"
+            echo "Note: Response not shown to protect sensitive data"
+            exit 1
+          fi
+
+          echo "Successfully updated Dokploy environment with GIT_SHA=${{ github.sha }} IMAGE_TAG=dev-${{ github.sha }}"
+
+      - name: Trigger Dokploy DEV
+        id: dokploy
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg composeId "${{ secrets.DOKPLOY_COMPOSE_ID }}" \
+            --arg title "${{ github.sha }}" \
+            --arg description "${{ github.event.workflow_run.head_commit.message }}" \
+            '{composeId: $composeId, title: $title, description: $description}')
+
+          HTTP_STATUS=$(curl -X POST ${{ secrets.DOKPLOY_BASE_URL }}/api/compose.redeploy \
+            -H 'accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -H 'x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}' \
+            -d "$PAYLOAD" \
+            -w "%{http_code}" \
+            -o /tmp/dokploy_response.json \
+            -s)
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Error: Dokploy API returned status $HTTP_STATUS"
+            echo "Response:"
+            cat /tmp/dokploy_response.json
+            exit 1
+          fi
+
+          echo "Successfully triggered Dokploy deployment (HTTP $HTTP_STATUS)"
+          echo "status=Success" >> $GITHUB_OUTPUT
+
+      - name: Discord Notification
+        if: always()
+        run: |
+          STATUS="${{ steps.dokploy.outputs.status }}"
+          if [ "$STATUS" == "Success" ]; then
+            TITLE="> ✅ **Deploy Successful**"
+          else
+            TITLE="> ❌ **Deploy Failed**"
+          fi
+
+          COMMIT_MSG=$(echo '${{ github.event.workflow_run.head_commit.message }}' | jq -Rs .)
+
+          PAYLOAD=$(jq -n \
+            --arg username "Must a ploy" \
+            --arg title "$TITLE" \
+            --arg repo "${{ github.repository }}" \
+            --arg env "dev" \
+            --arg date "$(date -d '${{ github.event.workflow_run.updated_at }}' '+%Y-%m-%d')" \
+            --arg time "$(date -d '${{ github.event.workflow_run.updated_at }}' '+%H:%M:%S UTC')" \
+            --arg commit "${{ github.sha }}" \
+            --argjson message "$COMMIT_MSG" \
+            --arg timestamp "${{ github.event.workflow_run.updated_at }}" \
+            '{
+              username: $username,
+              embeds: [{
+                title: $title,
+                color: 3066993,
+                fields: [
+                  { name: "🔧 Repo", value: $repo, inline: false },
+                  { name: "🌍 Environment", value: $env, inline: true },
+                  { name: "📅 Date", value: $date, inline: true },
+                  { name: "⏰ Time", value: $time, inline: true },
+                  { name: "🔗 Commit", value: ("`" + $commit + "`"), inline: false },
+                  { name: "📝 Message", value: $message, inline: false }
+                ],
+                footer: { text: "Dokploy Build Notification" },
+                timestamp: $timestamp
+              }]
+            }')
+
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
