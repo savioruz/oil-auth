@@ -2,49 +2,32 @@ name: CI
 
 on:
   push:
-    branches: [main, staging, next]
+    branches: [main, dev]
   pull_request:
-    branches: [main, staging, next]
+    branches: [main, dev]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-# Runs on ubuntu-latest first; if that attempt fails (e.g. a hosted-runner outage), the same
-# checks re-run on self-hosted. `continue-on-error` on the primary is what makes the fallback
-# real: a hosted failure does NOT fail the run when the fallback succeeds, so the run still
-# concludes "success" and the downstream CD (which triggers on CI success) still fires. Only if
-# BOTH attempts fail does the run go red.
 jobs:
-  verify:
-    name: ubuntu-latest
+  test:
+    name: Test
     runs-on: ubuntu-latest
-    continue-on-error: true
-    outputs:
-      passed: ${{ steps.mark.outputs.passed }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          fetch-depth: 0
+          bun-version: latest
 
-      - name: Verify
-        uses: ./.github/actions/ci-verify
+      - name: Install dependencies
+        run: bun install
 
-      - name: Mark passed
-        id: mark
-        run: echo "passed=true" >> "$GITHUB_OUTPUT"
+      - name: Run linter
+        run: bun run lint
 
-  verify-fallback:
-    name: self-hosted fallback
-    needs: [verify]
-    if: ${{ !cancelled() && needs.verify.outputs.passed != 'true' }}
-    runs-on: self-hosted
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Run type checks
+        run: bun run typecheck
 
-      - name: Verify
-        uses: ./.github/actions/ci-verify
+      - name: Run unit tests
+        run: bun run test:unit
