@@ -1,0 +1,32 @@
+name: CD STAGING
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [staging]
+    types: [completed]
+
+permissions:
+  contents: read
+  packages: write
+
+# Deploys on ubuntu-latest first; if that attempt fails, the same deploy body re-runs on a
+# self-hosted runner. The primary is gated on a successful CI run; the fallback only engages
+# when the primary deploy itself fails (not when it was skipped).
+jobs:
+  primary:
+    name: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    uses: ./.github/workflows/_cd-staging.yaml
+    with:
+      runner: ubuntu-latest
+    secrets: inherit
+
+  fallback:
+    name: self-hosted fallback
+    needs: [primary]
+    if: ${{ always() && needs.primary.result == 'failure' }}
+    uses: ./.github/workflows/_cd-staging.yaml
+    with:
+      runner: self-hosted
+    secrets: inherit

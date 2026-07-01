@@ -2,56 +2,50 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  packages: write
+
+# Builds on the native hosted runners first (amd64 on ubuntu-latest, arm64 on ubuntu-24.04-arm);
+# if that attempt fails, the same release body re-runs entirely on self-hosted runners. Once the
+# image(s) are published, github-release generates the changelog and cuts the GitHub Release.
 jobs:
-  build:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
+  primary:
+    name: hosted runners
+    uses: ./.github/workflows/_release.yaml
+    with:
+      amd_runner: ubuntu-latest
+      arm_runner: ubuntu-24.04-arm
+    secrets: inherit
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  fallback:
+    name: self-hosted fallback
+    needs: [primary]
+    if: ${{ always() && needs.primary.result == 'failure' }}
+    uses: ./.github/workflows/_release.yaml
+    with:
+      amd_runner: self-hosted
+      arm_runner: self-hosted
+    secrets: inherit
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=ref,event=tag
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  release:
+  github-release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
-
+    needs: [primary, fallback]
+    if: ${{ !cancelled() && (needs.primary.result == 'success' || needs.fallback.result == 'success') }}
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Generate changelog
         id: changelog
@@ -60,12 +54,10 @@ jobs:
           myToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body: ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false

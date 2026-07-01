@@ -1,0 +1,56 @@
+name: CI Verify
+description: Detect source changes, then install deps and run lint, typecheck, and unit tests. Assumes the repo is already checked out.
+
+runs:
+  using: composite
+  steps:
+    - name: Detect source changes
+      id: changes
+      uses: tj-actions/changed-files@v47
+      with:
+        files: |
+          **.ts
+          **/*.ts
+          package.json
+          bun.lock
+          tsconfig.json
+          biome.json
+          Dockerfile
+          .github/workflows/ci.yaml
+          .github/workflows/cd-dev.yaml
+          .github/workflows/cd-staging.yaml
+
+    - name: Setup Bun
+      if: steps.changes.outputs.any_changed == 'true'
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Cache Bun modules
+      if: steps.changes.outputs.any_changed == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.bun/install/cache
+        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
+
+    - name: Install dependencies
+      if: steps.changes.outputs.any_changed == 'true'
+      shell: bash
+      run: bun install --frozen-lockfile
+
+    - name: Run linter
+      if: steps.changes.outputs.any_changed == 'true'
+      shell: bash
+      run: bun run lint
+
+    - name: Run type checks
+      if: steps.changes.outputs.any_changed == 'true'
+      shell: bash
+      run: bun run typecheck
+
+    - name: Run unit tests
+      if: steps.changes.outputs.any_changed == 'true'
+      shell: bash
+      run: bun run test:unit
